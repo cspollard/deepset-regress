@@ -10,12 +10,8 @@ def intersperse(i, xs):
   yield xs[-1]
 
 
-def regress(localnet, globalnet, feats, outsize, lengths):
+def regress(localnet, globalnet, feats, outsize):
   tmp = localnet(feats)
-
-  for i in range(lengths):
-    tmp[i , 0 , lengths[i]:] = 0.0
-
   sums = torch.sum(tmp, axis=2)
   outs = globalnet(sums)
   mus = outs[: , :outsize]

@@ -10,8 +10,8 @@
 , "number_epochs" : 99999
 , "grad_clip" : 1e-4
 
-, "sig_gauss" : [ 20.0 , 1.0 ]
-, "bkg_gauss" : [ 20.0 , 5.0 ]
+, "sig_gauss" : [ 0.0 , 1.0 ]
+, "bkg_gauss" : [ 3.0 , 5.0 ]
 
 , "sig_norm_range" : [ 0.0 , 50.0 ]
 , "bkg_norm_range" : [ 0.0 , 50.0 ]
