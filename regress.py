@@ -36,10 +36,13 @@ lr = config["lr"]
 globalnodes = config["globalnodes"]
 localnodes = config["localnodes"]
 
-sig_gauss = config["sig_gauss"]
-bkg_gauss = config["bkg_gauss"]
+sig_mu_range = config["sig_mu_range"]
+sig_sigma_range = config["sig_sigma_range"]
+bkg_mu_range = config["bkg_mu_range"]
+bkg_sigma_range = config["bkg_sigma_range"]
 sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
+max_range = config["max_range"]
 
 
 from time import gmtime, strftime
@@ -53,25 +56,30 @@ writer = SummaryWriter(runname)
 
 rng = np.random.default_rng()
 
-def generate_data(mu, sig, norms, max_size):
+def generate_data(mus, sigs, norms, max_size):
   batches = norms.size
   ns = rng.poisson(norms)
 
-  outs = mu + sig * rng.standard_normal(size=(batches, 1, max_size))
+  outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
   for i in range(batches):
     outs[i , 0 , ns[i]:] = 0.0
   
   return outs
 
-sig_mu = sig_gauss[0]
-sig_sigma = sig_gauss[1]
-bkg_mu = bkg_gauss[0]
-bkg_sigma = bkg_gauss[1]
+def avg(l):
+  s = sum(l)
+  return s / len(l)
 
-test_sig50 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([50.0]*100), 75))
-test_sig25 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([25.0]*100), 75))
-test_sig05 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([05.0]*100), 75))
-test_bkg = torch.Tensor(generate_data(bkg_mu, bkg_sigma, np.array([50.0]*100), 75))
+sig_mu = avg(sig_mu_range)
+sig_sigma = avg(sig_sigma_range)
+
+bkg_mu = avg(bkg_mu_range)
+bkg_sigma = avg(bkg_sigma_range)
+
+test_sig50 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([50.0]*100), max_range))
+test_sig25 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([25.0]*100), max_range))
+test_sig05 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([05.0]*100), max_range))
+test_bkg = torch.Tensor(generate_data(bkg_mu, bkg_sigma, np.array([50.0]*100), max_range))
 
 inputs50 = \
   torch.cat \
@@ -137,22 +145,28 @@ for epoch in range(number_epochs):
   print("plotting")
 
   mus , cov = utils.regress(localnet, globalnet, inputs50, 2)
+  corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
   writer.add_scalar("avgmu50", mus[:,0].mean(), global_step=epoch)
+  writer.add_scalar("avgcorr50", corr.mean(), global_step=epoch)
   writer.add_scalar("avgsig50", torch.sqrt(cov[:,0,0]).mean(), global_step=epoch)
-  writer.add_scalar("spread50", mus.std(), global_step=epoch)
+  writer.add_scalar("spread50", (mus[:,0] - 50).std(), global_step=epoch)
 
   mus , cov = utils.regress(localnet, globalnet, inputs25, 2)
+  corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
   writer.add_scalar("avgmu25", mus[:,0].mean(), global_step=epoch)
+  writer.add_scalar("avgcorr25", corr.mean(), global_step=epoch)
   writer.add_scalar("avgsig25", torch.sqrt(cov[:,0,0]).mean(), global_step=epoch)
-  writer.add_scalar("spread25", mus.std(), global_step=epoch)
+  writer.add_scalar("spread25", (mus[:,0] - 25).std(), global_step=epoch)
 
   mus , cov = utils.regress(localnet, globalnet, inputs05, 2)
+  corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
   writer.add_scalar("avgmu05", mus[:,0].mean(), global_step=epoch)
+  writer.add_scalar("avgcorr05", corr.mean(), global_step=epoch)
   writer.add_scalar("avgsig05", torch.sqrt(cov[:,0,0]).mean(), global_step=epoch)
-  writer.add_scalar("spread05", mus.std(), global_step=epoch)
+  writer.add_scalar("spread05", (mus[:,0] - 5).std(), global_step=epoch)
 
   # insert plotting here.
   if epoch > 0:
@@ -178,8 +192,37 @@ for epoch in range(number_epochs):
       , size=(batch_size,2)
       )
 
-    siginputs = generate_data(sig_gauss[0], sig_gauss[1], targs[:,0], 75)
-    bkginputs = generate_data(bkg_gauss[0], bkg_gauss[1], targs[:,1], 75)
+    sigmus = \
+      rng.uniform \
+      ( low=sig_mu_range[0]
+      , high=sig_mu_range[1]
+      , size=batch_size
+      )
+
+    sigsigmas = \
+      rng.uniform \
+      ( low=sig_sigma_range[0]
+      , high=sig_sigma_range[1]
+      , size=batch_size
+      )
+
+
+    bkgmus = \
+      rng.uniform \
+      ( low=bkg_mu_range[0]
+      , high=bkg_mu_range[1]
+      , size=batch_size
+      )
+
+    bkgsigmas = \
+      rng.uniform \
+      ( low=bkg_sigma_range[0]
+      , high=bkg_sigma_range[1]
+      , size=batch_size
+      )
+
+    siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_range)
+    bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_range)
 
     inputs = \
       torch.cat \

@@ -5,15 +5,20 @@
 , "outdir" : "tb"
 , "device" : "cpu"
 
-, "batch_size" : 32
-, "epoch_size" : 1000
+, "batch_size" : 128
+, "epoch_size" : 200
 , "number_epochs" : 99999
 , "grad_clip" : 1e-4
 
-, "sig_gauss" : [ 0.0 , 1.0 ]
-, "bkg_gauss" : [ 3.0 , 5.0 ]
+, "sig_mu_range" : [ 4.0 , 6.0 ]
+, "sig_sigma_range" : [ 0.5 , 1.5 ]
 
-, "sig_norm_range" : [ 0.0 , 50.0 ]
-, "bkg_norm_range" : [ 0.0 , 50.0 ]
+, "bkg_mu_range" : [ 10.0 , 15.0 ]
+, "bkg_sigma_range" : [ 4.0 , 6.0 ]
+
+, "sig_norm_range" : [ 0.0 , 100.0 ]
+, "bkg_norm_range" : [ 0.0 , 100.0 ]
+
+, "max_range" : 125
 
 }
