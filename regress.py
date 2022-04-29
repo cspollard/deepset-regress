@@ -60,6 +60,9 @@ def generate_data(mus, sigs, norms, max_size):
   batches = norms.size
   ns = rng.poisson(norms)
 
+  mus = np.broadcast_to(mus, (max_size, 1, batches)).T
+  sigs = np.broadcast_to(sigs, (max_size, 1, batches)).T
+
   outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
   for i in range(batches):
     outs[i , 0 , ns[i]:] = 0.0
@@ -70,11 +73,11 @@ def avg(l):
   s = sum(l)
   return s / len(l)
 
-sig_mu = avg(sig_mu_range)
-sig_sigma = avg(sig_sigma_range)
+sig_mu = avg(sig_mu_range) * np.ones(100)
+sig_sigma = avg(sig_sigma_range) * np.ones(100)
 
-bkg_mu = avg(bkg_mu_range)
-bkg_sigma = avg(bkg_sigma_range)
+bkg_mu = avg(bkg_mu_range) * np.ones(100)
+bkg_sigma = avg(bkg_sigma_range) * np.ones(100)
 
 test_sig50 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([50.0]*100), max_range))
 test_sig25 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([25.0]*100), max_range))
