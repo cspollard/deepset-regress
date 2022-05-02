@@ -209,7 +209,6 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
-
     bkgmus = \
       rng.uniform \
       ( low=bkg_mu_range[0]
