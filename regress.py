@@ -232,12 +232,12 @@ for epoch in range(number_epochs):
       , axis = 2
       )
 
-    inputs.requires_grad = True
+    # inputs.requires_grad = True
 
     mus , cov = utils.regress(localnet, globalnet, inputs, 2)
 
     targs = torch.Tensor(targs)
-    targs.requires_grad = True
+    # targs.requires_grad = True
 
     guesses , _ , l = utils.loss(targs, mus, cov)
 

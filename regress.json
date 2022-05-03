@@ -1,12 +1,12 @@
-{ "globalnodes" : [ 64 , 64 , 64 ]
+{ "globalnodes" : [ 128 , 128 , 128 ]
 , "localnodes" : [ 32 , 32 , 32 ]
 
 , "lr" : 3e-4
 , "outdir" : "tb"
 , "device" : "cpu"
 
-, "batch_size" : 64
-, "epoch_size" : 200
+, "batch_size" : 32
+, "epoch_size" : 500
 , "number_epochs" : 99999
 , "grad_clip" : 1e-3
 
