@@ -88,19 +88,19 @@ inputs50 = \
   torch.cat \
   ( [ test_sig50 , test_bkg ]
   , axis = 2
-  )
+  ).detach()
 
 inputs25 = \
   torch.cat \
   ( [ test_sig25 , test_bkg ]
   , axis = 2
-  )
+  ).detach()
 
 inputs05 = \
   torch.cat \
   ( [ test_sig05 , test_bkg ]
   , axis = 2
-  )
+  ).detach()
 
 # we want a 2D gaussian PDF
 targlen = 2
@@ -248,8 +248,8 @@ for epoch in range(number_epochs):
     if grad_clip > 0:
       torch.nn.utils.clip_grad_norm_(allparams, grad_clip)
 
-    sumloss += loss.item()
-    sumdist += torch.sqrt((guesses[:,0] - targs[:,0])**2).mean()
+    sumloss += loss.detach().item()
+    sumdist += torch.sqrt((guesses[:,0] - targs[:,0])**2).mean().item()
 
     optim.step()
 
