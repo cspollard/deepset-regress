@@ -79,26 +79,26 @@ sig_sigma = avg(sig_sigma_range) * np.ones(100)
 bkg_mu = avg(bkg_mu_range) * np.ones(100)
 bkg_sigma = avg(bkg_sigma_range) * np.ones(100)
 
-test_sig50 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([50.0]*100), max_range))
-test_sig25 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([25.0]*100), max_range))
-test_sig05 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([05.0]*100), max_range))
-test_bkg = torch.Tensor(generate_data(bkg_mu, bkg_sigma, np.array([50.0]*100), max_range))
+test_sig50 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([50.0]*100), max_range)).detach()
+test_sig25 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([25.0]*100), max_range)).detach()
+test_sig05 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([05.0]*100), max_range)).detach()
+test_bkg = torch.Tensor(generate_data(bkg_mu, bkg_sigma, np.array([50.0]*100), max_range)).detach()
 
 inputs50 = \
   torch.cat \
-  ( [ torch.Tensor(test_sig50) , torch.Tensor(test_bkg) ]
+  ( [ test_sig50 , test_bkg ]
   , axis = 2
   )
 
 inputs25 = \
   torch.cat \
-  ( [ torch.Tensor(test_sig25) , torch.Tensor(test_bkg) ]
+  ( [ test_sig25 , test_bkg ]
   , axis = 2
   )
 
 inputs05 = \
   torch.cat \
-  ( [ torch.Tensor(test_sig05) , torch.Tensor(test_bkg) ]
+  ( [ test_sig05 , test_bkg ]
   , axis = 2
   )
 
@@ -228,7 +228,7 @@ for epoch in range(number_epochs):
 
     inputs = \
       torch.cat \
-      ( [ torch.Tensor(siginputs) , torch.Tensor(bkginputs) ]
+      ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
       , axis = 2
       )
 
@@ -236,7 +236,7 @@ for epoch in range(number_epochs):
 
     mus , cov = utils.regress(localnet, globalnet, inputs, 2)
 
-    targs = torch.Tensor(targs)
+    targs = torch.Tensor(targs).detach()
     # targs.requires_grad = True
 
     guesses , _ , l = utils.loss(targs, mus, cov)
