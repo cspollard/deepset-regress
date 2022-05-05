@@ -9,6 +9,7 @@ import json
 import plotutils
 import utils
 import numpy as np
+import gc
 
 
 print("torch version:", torch.__version__)
@@ -73,7 +74,7 @@ def avg(l):
   s = sum(l)
   return s / len(l)
 
-ntests = 50
+ntests = 1000
 
 testsig_mu = avg(sig_mu_range) * np.ones(ntests)
 testsig_sigma = avg(sig_sigma_range) * np.ones(ntests)
@@ -136,6 +137,7 @@ os.mkdir(runname + ".plots")
 sumloss = 0
 sumdist = 0
 for epoch in range(number_epochs):
+  gc.collect()
 
   torch.save(localnet.state_dict(), runname + "/localnet.pth")
   torch.save(globalnet.state_dict(), runname + "/globalnet.pth")
@@ -147,50 +149,72 @@ for epoch in range(number_epochs):
   globalnet.zero_grad()
 
   print("plotting")
+  # TODO:
+  # plot spread / sqrt(N)
 
   inputs = gen([testsig_mu, testsig_sigma, 50.0], [testbkg_mu, testbkg_sigma, 50.0])
 
   mus , cov = utils.regress(localnet, globalnet, inputs, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgbias50", mus[:,0].mean().item() - 50.0, global_step=epoch)
+  bias = mus[:,0] - 50.0 
+  uncert = torch.sqrt(cov[:,0,0])
+  pull = bias / uncert
+
+  writer.add_scalar("avgbias50", bias.mean().item(), global_step=epoch)
   writer.add_scalar("avgcorr50", corr.mean().item(), global_step=epoch)
-  writer.add_scalar("avgsig50", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
-  writer.add_scalar("spread50", (mus[:,0] - 50).std().item(), global_step=epoch)
+  writer.add_scalar("avguncert50", uncert.mean().item(), global_step=epoch)
+  writer.add_scalar("avgpull50", pull.mean().item(), global_step=epoch)
+  writer.add_scalar("spread50", bias.std().item(), global_step=epoch)
 
   localnet.zero_grad()
   globalnet.zero_grad()
 
 
-  inputs = gen([testsig_mu, testsig_sigma, 25.0], [testbkg_mu, testbkg_sigma, 50.0])
+  inputs = gen([testsig_mu, testsig_sigma, 25.0], [testbkg_mu, testbkg_sigma, 25.0])
 
   mus , cov = utils.regress(localnet, globalnet, inputs, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgbias25", mus[:,0].mean().item() - 25.0, global_step=epoch)
+  bias = mus[:,0] - 25.0 
+  uncert = torch.sqrt(cov[:,0,0])
+  pull = bias / uncert
+
+  writer.add_scalar("avgbias25", bias.mean().item(), global_step=epoch)
   writer.add_scalar("avgcorr25", corr.mean().item(), global_step=epoch)
-  writer.add_scalar("avgsig25", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
-  writer.add_scalar("spread25", (mus[:,0] - 25).std().item(), global_step=epoch)
+  writer.add_scalar("avguncert25", uncert.mean().item(), global_step=epoch)
+  writer.add_scalar("avgpull25", pull.mean().item(), global_step=epoch)
+  writer.add_scalar("spread25", bias.std().item(), global_step=epoch)
 
   localnet.zero_grad()
   globalnet.zero_grad()
 
 
-  inputs = gen([testsig_mu, testsig_sigma, 5.0], [testbkg_mu, testbkg_sigma, 50.0])
+  inputs = gen([testsig_mu, testsig_sigma, 05.0], [testbkg_mu, testbkg_sigma, 05.0])
 
-  mus , cov = utils.regress(localnet, globalnet, inputs05, 2)
+  mus , cov = utils.regress(localnet, globalnet, inputs, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgbias05", mus[:,0].mean().item() - 5.0, global_step=epoch)
+  bias = mus[:,0] - 05.0 
+  uncert = torch.sqrt(cov[:,0,0])
+  pull = bias / uncert
+
+  writer.add_scalar("avgbias05", bias.mean().item(), global_step=epoch)
   writer.add_scalar("avgcorr05", corr.mean().item(), global_step=epoch)
-  writer.add_scalar("avgsig05", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
-  writer.add_scalar("spread05", (mus[:,0] - 5).std().item(), global_step=epoch)
+  writer.add_scalar("avguncert05", uncert.mean().item(), global_step=epoch)
+  writer.add_scalar("avgpull05", pull.mean().item(), global_step=epoch)
+  writer.add_scalar("spread05", bias.std().item(), global_step=epoch)
+
+  localnet.zero_grad()
+  globalnet.zero_grad()
+
 
   # insert plotting here.
   if epoch > 0:
 
     writer.add_scalar("avgloss", sumloss / epoch_size, global_step=epoch)
     writer.add_scalar("avgdist", sumdist / epoch_size, global_step=epoch)
+
 
   print("starting epoch %03d" % epoch)
 
@@ -238,6 +262,7 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
+
     siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_range)
     bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_range)
 
@@ -264,3 +289,4 @@ for epoch in range(number_epochs):
     sumdist += torch.sqrt((guesses[:,0] - targs[:,0])**2).mean().item()
 
     optim.step()
+
