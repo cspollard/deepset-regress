@@ -153,7 +153,7 @@ for epoch in range(number_epochs):
   mus , cov = utils.regress(localnet, globalnet, inputs, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgmu50", mus[:,0].mean().item(), global_step=epoch)
+  writer.add_scalar("avgbias50", mus[:,0].mean().item() - 50.0, global_step=epoch)
   writer.add_scalar("avgcorr50", corr.mean().item(), global_step=epoch)
   writer.add_scalar("avgsig50", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
   writer.add_scalar("spread50", (mus[:,0] - 50).std().item(), global_step=epoch)
@@ -167,7 +167,7 @@ for epoch in range(number_epochs):
   mus , cov = utils.regress(localnet, globalnet, inputs, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgmu25", mus[:,0].mean().item(), global_step=epoch)
+  writer.add_scalar("avgbias25", mus[:,0].mean().item() - 25.0, global_step=epoch)
   writer.add_scalar("avgcorr25", corr.mean().item(), global_step=epoch)
   writer.add_scalar("avgsig25", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
   writer.add_scalar("spread25", (mus[:,0] - 25).std().item(), global_step=epoch)
@@ -181,7 +181,7 @@ for epoch in range(number_epochs):
   mus , cov = utils.regress(localnet, globalnet, inputs05, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgmu05", mus[:,0].mean().item(), global_step=epoch)
+  writer.add_scalar("avgbias05", mus[:,0].mean().item() - 5.0, global_step=epoch)
   writer.add_scalar("avgcorr05", corr.mean().item(), global_step=epoch)
   writer.add_scalar("avgsig05", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
   writer.add_scalar("spread05", (mus[:,0] - 5).std().item(), global_step=epoch)
