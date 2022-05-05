@@ -73,34 +73,32 @@ def avg(l):
   s = sum(l)
   return s / len(l)
 
-sig_mu = avg(sig_mu_range) * np.ones(100)
-sig_sigma = avg(sig_sigma_range) * np.ones(100)
+ntests = 50
 
-bkg_mu = avg(bkg_mu_range) * np.ones(100)
-bkg_sigma = avg(bkg_sigma_range) * np.ones(100)
+testsig_mu = avg(sig_mu_range) * np.ones(ntests)
+testsig_sigma = avg(sig_sigma_range) * np.ones(ntests)
 
-test_sig50 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([50.0]*100), max_range)).detach()
-test_sig25 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([25.0]*100), max_range)).detach()
-test_sig05 = torch.Tensor(generate_data(sig_mu, sig_sigma, np.array([05.0]*100), max_range)).detach()
-test_bkg = torch.Tensor(generate_data(bkg_mu, bkg_sigma, np.array([50.0]*100), max_range)).detach()
+testbkg_mu = avg(bkg_mu_range) * np.ones(ntests)
+testbkg_sigma = avg(bkg_sigma_range) * np.ones(ntests)
 
-inputs50 = \
-  torch.cat \
-  ( [ test_sig50 , test_bkg ]
-  , axis = 2
-  ).detach()
+def gen(sig, bkg):
+  sigmu = sig[0]
+  sigsig = sig[1]
+  sigrate = sig[2]
 
-inputs25 = \
-  torch.cat \
-  ( [ test_sig25 , test_bkg ]
-  , axis = 2
-  ).detach()
+  bkgmu = bkg[0]
+  bkgsig = bkg[1]
+  bkgrate = bkg[2]
 
-inputs05 = \
-  torch.cat \
-  ( [ test_sig05 , test_bkg ]
-  , axis = 2
-  ).detach()
+  sig = torch.Tensor(generate_data(sigmu, sigsig, np.array([sigrate]*ntests), max_range)).detach()
+  bkg = torch.Tensor(generate_data(bkgmu, bkgsig, np.array([bkgrate]*ntests), max_range)).detach()
+
+  return \
+    torch.cat \
+    ( [ sig , bkg ]
+    , axis = 2
+    ).detach()
+
 
 # we want a 2D gaussian PDF
 targlen = 2
@@ -145,31 +143,48 @@ for epoch in range(number_epochs):
   for net in nets:
     net.training = False
 
+  localnet.zero_grad()
+  globalnet.zero_grad()
+
   print("plotting")
 
-  mus , cov = utils.regress(localnet, globalnet, inputs50, 2)
+  inputs = gen([testsig_mu, testsig_sigma, 50.0], [testbkg_mu, testbkg_sigma, 50.0])
+
+  mus , cov = utils.regress(localnet, globalnet, inputs, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgmu50", mus[:,0].mean(), global_step=epoch)
-  writer.add_scalar("avgcorr50", corr.mean(), global_step=epoch)
-  writer.add_scalar("avgsig50", torch.sqrt(cov[:,0,0]).mean(), global_step=epoch)
-  writer.add_scalar("spread50", (mus[:,0] - 50).std(), global_step=epoch)
+  writer.add_scalar("avgmu50", mus[:,0].mean().item(), global_step=epoch)
+  writer.add_scalar("avgcorr50", corr.mean().item(), global_step=epoch)
+  writer.add_scalar("avgsig50", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
+  writer.add_scalar("spread50", (mus[:,0] - 50).std().item(), global_step=epoch)
 
-  mus , cov = utils.regress(localnet, globalnet, inputs25, 2)
+  localnet.zero_grad()
+  globalnet.zero_grad()
+
+
+  inputs = gen([testsig_mu, testsig_sigma, 25.0], [testbkg_mu, testbkg_sigma, 50.0])
+
+  mus , cov = utils.regress(localnet, globalnet, inputs, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgmu25", mus[:,0].mean(), global_step=epoch)
-  writer.add_scalar("avgcorr25", corr.mean(), global_step=epoch)
-  writer.add_scalar("avgsig25", torch.sqrt(cov[:,0,0]).mean(), global_step=epoch)
-  writer.add_scalar("spread25", (mus[:,0] - 25).std(), global_step=epoch)
+  writer.add_scalar("avgmu25", mus[:,0].mean().item(), global_step=epoch)
+  writer.add_scalar("avgcorr25", corr.mean().item(), global_step=epoch)
+  writer.add_scalar("avgsig25", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
+  writer.add_scalar("spread25", (mus[:,0] - 25).std().item(), global_step=epoch)
+
+  localnet.zero_grad()
+  globalnet.zero_grad()
+
+
+  inputs = gen([testsig_mu, testsig_sigma, 5.0], [testbkg_mu, testbkg_sigma, 50.0])
 
   mus , cov = utils.regress(localnet, globalnet, inputs05, 2)
   corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
 
-  writer.add_scalar("avgmu05", mus[:,0].mean(), global_step=epoch)
-  writer.add_scalar("avgcorr05", corr.mean(), global_step=epoch)
-  writer.add_scalar("avgsig05", torch.sqrt(cov[:,0,0]).mean(), global_step=epoch)
-  writer.add_scalar("spread05", (mus[:,0] - 5).std(), global_step=epoch)
+  writer.add_scalar("avgmu05", mus[:,0].mean().item(), global_step=epoch)
+  writer.add_scalar("avgcorr05", corr.mean().item(), global_step=epoch)
+  writer.add_scalar("avgsig05", torch.sqrt(cov[:,0,0]).mean().item(), global_step=epoch)
+  writer.add_scalar("spread05", (mus[:,0] - 5).std().item(), global_step=epoch)
 
   # insert plotting here.
   if epoch > 0:
@@ -232,12 +247,9 @@ for epoch in range(number_epochs):
       , axis = 2
       )
 
-    # inputs.requires_grad = True
-
     mus , cov = utils.regress(localnet, globalnet, inputs, 2)
 
     targs = torch.Tensor(targs).detach()
-    # targs.requires_grad = True
 
     guesses , _ , l = utils.loss(targs, mus, cov)
 
@@ -252,4 +264,3 @@ for epoch in range(number_epochs):
     sumdist += torch.sqrt((guesses[:,0] - targs[:,0])**2).mean().item()
 
     optim.step()
-
