@@ -111,7 +111,10 @@ except OSError as error:
 
 labels = [ "nsignal", "nbkg" ]
 
-binranges = [(0, 100), (0, 100)]
+binranges = \
+  [ (sig_norm_range[0], sig_norm_range[1])
+  , (bkg_norm_range[0], bkg_norm_range[1])
+  ]
 
 targs = \
   rng.uniform \
@@ -177,4 +180,71 @@ plotutils.valid_plots \
   , None
   , None
   , outfolder
+  )
+
+targs = \
+  rng.uniform \
+  ( low=(25, 25)
+  , high=(75, 75)
+  , size=(ntests,2)
+  )
+
+sigmus = \
+  rng.uniform \
+  ( low=0.75*sig_mu_range[0] + 0.25*sig_mu_range[1]
+  , high=0.25*sig_mu_range[0] + 0.75*sig_mu_range[1]
+  , size=ntests
+  )
+
+sigsigmas = \
+  rng.uniform \
+  ( low=0.75*sig_sigma_range[0] + 0.25*sig_sigma_range[1]
+  , high=0.25*sig_sigma_range[0] + 0.75*sig_sigma_range[1]
+  , size=ntests
+  )
+
+bkgmus = \
+  rng.uniform \
+  ( low=0.75*bkg_mu_range[0] + 0.25*bkg_mu_range[1]
+  , high=0.25*bkg_mu_range[0] + 0.75*bkg_mu_range[1]
+  , size=ntests
+  )
+
+bkgsigmas = \
+  rng.uniform \
+  ( low=0.75*bkg_sigma_range[0] + 0.25*bkg_sigma_range[1]
+  , high=0.25*bkg_sigma_range[0] + 0.75*bkg_sigma_range[1]
+  , size=ntests
+  )
+
+
+siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
+bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
+
+inputs = \
+  torch.cat \
+  ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
+  , axis = 2
+  )
+
+mus , cov = \
+  utils.regress \
+  ( localnet
+  , globalnet
+  , inputs
+  , targlen
+  )
+
+l = utils.loss(torch.Tensor(targs), mus, cov)
+
+plotutils.valid_plots \
+  ( mus.detach().numpy()
+  , cov.detach().numpy()
+  , targs
+  , labels
+  , binranges
+  , None
+  , None
+  , outfolder
+  , prefix="25-75_"
   )

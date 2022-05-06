@@ -76,7 +76,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     ax = fig.add_subplot(111)
     ax.hist \
       ( targs
-      , bins=np.mgrid[bmin:bmax:100j]
+      , bins=np.mgrid[bmin:bmax:101j]
       , color="blue"
       , density=True
       )
@@ -94,12 +94,12 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     ax = fig.add_subplot(111)
     ax.hist \
       ( pulls
-      , bins=np.mgrid[-5:5:100j]
+      , bins=np.mgrid[-5:5:101j]
       , color="blue"
       , density=True
       )
 
-    xs = np.mgrid[-3:3:100j]
+    xs = np.mgrid[-5:5:100j]
     ys = gaussian(0, 1)(xs)
 
     ax.plot(xs, ys, "--", color="black")
@@ -111,7 +111,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     ax = fig.add_subplot(111)
     ax.hist \
       ( diffs
-      , bins=np.mgrid[-bmax:bmax:100j]
+      , bins=np.mgrid[-bmax:bmax:101j]
       , color="blue"
       , density=True
       )
@@ -122,7 +122,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
 
 
     name = prefix + "diffs_evolution_%s" % labels[i]
-    fig = profile(np.mgrid[bmin:bmax:10j], thesemus, diffs)
+    fig = profile(np.mgrid[bmin:bmax:11j], targs, diffs)
     save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
 
@@ -131,7 +131,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     ax = fig.add_subplot(111)
     ax.hist \
       ( resps
-      , bins=np.mgrid[-5:5:100j]
+      , bins=np.mgrid[-5:5:101j]
       , color="blue"
       , density=True
       )
@@ -150,7 +150,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     fig.clf()
 
     name = prefix + "response_evolution_%s" % labels[i]
-    fig = profile(np.mgrid[bmin:bmax:10j], thesemus, resps)
+    fig = profile(np.mgrid[bmin:bmax:11j], targs, resps)
     save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
 
@@ -158,7 +158,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     ax = fig.add_subplot(111)
     ax.hist \
       ( thesemus
-      , bins=np.mgrid[bmin:bmax:50j]
+      , bins=np.mgrid[bmin:bmax:51j]
       , color="blue"
       , density=True
       )
@@ -172,7 +172,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     ax.hist2d \
       ( targs
       , thesemus
-      , bins = np.mgrid[bmin:bmax:50j]
+      , bins=np.mgrid[bmin:bmax:51j]
       , norm=colors.LogNorm()
       )
 
