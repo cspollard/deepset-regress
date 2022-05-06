@@ -1,10 +1,10 @@
 import torch
 from sys import argv
 import json
-from IO import *
 import plotutils
 import utils
 import os
+import numpy as np
 
 
 print("torch version:", torch.__version__)
@@ -18,34 +18,88 @@ fconfig = open(argv[1])
 config = json.load(fconfig)
 fconfig.close()
 
+outdir = config["outdir"]
 device = config["device"]
 
-tnames = config["tnames"]
+batch_size = config["batch_size"]
+epoch_size = config["epoch_size"]
+number_epochs = config["number_epochs"]
 
-valid_frac = config["valid_frac"]
+grad_clip = config["grad_clip"]
 
-dset = Dataset(tnames, valid_frac=valid_frac)
+lr = config["lr"]
 
-targlen = dset.targs.size()[1]
 
-regressnodes = \
-    [ 20 ] \
-  + config["regressnodes"] \
+globalnodes = config["globalnodes"]
+localnodes = config["localnodes"]
+
+sig_mu_range = config["sig_mu_range"]
+sig_sigma_range = config["sig_sigma_range"]
+bkg_mu_range = config["bkg_mu_range"]
+bkg_sigma_range = config["bkg_sigma_range"]
+sig_norm_range = config["sig_norm_range"]
+bkg_norm_range = config["bkg_norm_range"]
+max_size = config["max_size"]
+
+
+
+rng = np.random.default_rng()
+
+def generate_data(mus, sigs, norms, max_size):
+  batches = norms.size
+  ns = rng.poisson(norms)
+
+  mus = np.broadcast_to(mus, (max_size, 1, batches)).T
+  sigs = np.broadcast_to(sigs, (max_size, 1, batches)).T
+
+  outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
+  for i in range(batches):
+    outs[i , 0 , ns[i]:] = 0.0
+  
+  return outs
+
+def avg(l):
+  s = sum(l)
+  return s / len(l)
+
+ntests = 10000
+
+testsig_mu = avg(sig_mu_range) * np.ones(ntests)
+testsig_sigma = avg(sig_sigma_range) * np.ones(ntests)
+
+testbkg_mu = avg(bkg_mu_range) * np.ones(ntests)
+testbkg_sigma = avg(bkg_sigma_range) * np.ones(ntests)
+
+# we want a 2D gaussian PDF
+targlen = 2
+
+localnodes = [ 1 ] + localnodes
+
+globalnodes = \
+    localnodes[-1:] \
+  + globalnodes \
   + [ targlen + (targlen * (targlen+1) // 2) ]
 
-
 act = torch.nn.LeakyReLU(0.01, inplace=True)
-regression = utils.network(regressnodes, act=act, init=dset.normfeats)
-
-networks = [regression]
-
-for net in networks:
-  net.to(device)
-
 
 runname = argv[2]
 
-regression.load_state_dict(torch.load(runname + "/regression.pth"))
+localnet = \
+  [ torch.nn.Conv1d(localnodes[i], localnodes[i+1], 1) for i in range(len(localnodes) - 1) ]
+  
+localnet = torch.nn.Sequential(*(utils.intersperse(act, localnet)))
+
+globalnet = \
+  [ torch.nn.Linear(globalnodes[i], globalnodes[i+1]) for i in range(len(globalnodes) - 1) ]
+  
+globalnet = torch.nn.Sequential(*(utils.intersperse(act, globalnet)))
+
+
+localnet.load_state_dict(torch.load(runname + "/localnet.pth"))
+globalnet.load_state_dict(torch.load(runname + "/globalnet.pth"))
+
+localnet.to(device)
+globalnet.to(device)
 
 outfolder = argv[3]
 try: 
@@ -55,84 +109,72 @@ except OSError as error:
 
 
 
-labels = \
-  [ "px1", "py1", "pz1"
-  , "px2", "py2", "pz2"
-  , "pt1", "pt2"
-  , "pttot", "invm"
-  ]
+labels = [ "nsignal", "nbkg" ]
 
-binranges = \
-  [(-500, 500), (-500, 500), (-500, 500)]*2 + [(0, 2000)]*4
+binranges = [(0, 100), (0, 100)]
+
+targs = \
+  rng.uniform \
+  ( low=(sig_norm_range[0], bkg_norm_range[0])
+  , high=(sig_norm_range[1], bkg_norm_range[1])
+  , size=(ntests,2)
+  )
+
+sigmus = \
+  rng.uniform \
+  ( low=sig_mu_range[0]
+  , high=sig_mu_range[1]
+  , size=ntests
+  )
+
+sigsigmas = \
+  rng.uniform \
+  ( low=sig_sigma_range[0]
+  , high=sig_sigma_range[1]
+  , size=ntests
+  )
+
+bkgmus = \
+  rng.uniform \
+  ( low=bkg_mu_range[0]
+  , high=bkg_mu_range[1]
+  , size=ntests
+  )
+
+bkgsigmas = \
+  rng.uniform \
+  ( low=bkg_sigma_range[0]
+  , high=bkg_sigma_range[1]
+  , size=ntests
+  )
 
 
-targs = dset.targs
+siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
+bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
+
+inputs = \
+  torch.cat \
+  ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
+  , axis = 2
+  )
+
 mus , cov = \
   utils.regress \
-  ( regression
-  , dset.feats
+  ( localnet
+  , globalnet
+  , inputs
   , targlen
   )
 
-mus , cov , l = utils.loss(targs, mus, cov, dset.permutedtargs)
-
+l = utils.loss(torch.Tensor(targs), mus, cov)
 
 plotutils.valid_plots \
   ( mus.detach().numpy()
   , cov.detach().numpy()
-  , targs.detach().numpy()
+  , targs
   , labels
   , binranges
   , None
   , None
   , outfolder
-  )
-
-
-targs = dset.validtargs
-mus , cov = \
-  utils.regress \
-  ( regression
-  , dset.validfeats
-  , targlen
-  )
-
-mus , cov , l = utils.loss(targs, mus, cov, dset.permutedtargs)
-
-plotutils.valid_plots \
-  ( mus.detach().numpy()
-  , cov.detach().numpy()
-  , targs.detach().numpy()
-  , labels
-  , binranges
-  , None
-  , None
-  , outfolder
-  , prefix="valid_"
-  )
-
-
-mask = dset.targs[:,-1] > 2e2
-targs = dset.targs[mask]
-feats = dset.feats[mask]
-
-mus , cov = \
-  utils.regress \
-  ( regression
-  , feats
-  , targlen
-  )
-
-mus , cov , l = utils.loss(targs, mus, cov, dset.permutedtargs)
-
-plotutils.valid_plots \
-  ( mus.detach().numpy()
-  , cov.detach().numpy()
-  , targs.detach().numpy()
-  , labels
-  , binranges
-  , None
-  , None
-  , outfolder
-  , prefix="m_gt_200_"
   )

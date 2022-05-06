@@ -1,7 +1,7 @@
-{ "globalnodes" : [ 128 , 128 , 128 ]
-, "localnodes" : [ 32 , 32 , 32 ]
+{ "globalnodes" : [ 64 , 64 , 64 , 64 , 64 , 64 ]
+, "localnodes" : [ 32 , 32 , 32 , 32 ]
 
-, "lr" : 1e-5
+, "lr" : 1e-3
 , "outdir" : "tb"
 , "device" : "cpu"
 
@@ -19,6 +19,6 @@
 , "sig_norm_range" : [ 0.0 , 100.0 ]
 , "bkg_norm_range" : [ 0.0 , 100.0 ]
 
-, "max_range" : 125
+, "max_size" : 125
 
 }

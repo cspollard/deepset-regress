@@ -34,7 +34,6 @@ def std1(xs, n):
   return np.std(xs[mask])
 
 
-
 def save_fig(fig, name, writer, epoch, outdir):
   if writer:
     writer.add_figure(name, fig, global_step = epoch)
@@ -42,7 +41,6 @@ def save_fig(fig, name, writer, epoch, outdir):
     fig.savefig(outdir + "/" + name + ".pdf")
 
   return
-
 
 
 def profile(bins, xs, ys):
@@ -62,7 +60,6 @@ def profile(bins, xs, ys):
     return fig
 
 
-
 def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, prefix=""):
 
   # first pair everything up
@@ -73,15 +70,10 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     bmax = binranges[i][1]
 
     fig = figure.Figure()
-    ax = fig.add_subplot(111)
-
-    xs = np.mgrid[-3:3:100j]
-    ys = gaussian(0, 1)(xs)
-
-    ax.plot(xs, ys, "--", color="black")
 
     targs = targets[: , i]
 
+    ax = fig.add_subplot(111)
     ax.hist \
       ( targs
       , bins=np.mgrid[bmin:bmax:100j]
@@ -99,12 +91,18 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
 
     pulls = diffs / thesesigmas
 
+    ax = fig.add_subplot(111)
     ax.hist \
       ( pulls
       , bins=np.mgrid[-5:5:100j]
       , color="blue"
       , density=True
       )
+
+    xs = np.mgrid[-3:3:100j]
+    ys = gaussian(0, 1)(xs)
+
+    ax.plot(xs, ys, "--", color="black")
 
     name = prefix + "pulls_%s" % labels[i]
     save_fig(fig, name, writer, epoch, outdir)

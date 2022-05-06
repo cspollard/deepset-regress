@@ -56,7 +56,7 @@ def loss(targets, mus, cov):
   logdet = torch.sum(torch.log(eigs), axis=1)
 
   # we need to keep the means, covariances, and the actual loss.
-  return mus , cov , logdet + d
+  return logdet + d
   
 
 # convert a 1D array of matrix elements into an upper triangular matrix

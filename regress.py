@@ -43,7 +43,7 @@ bkg_mu_range = config["bkg_mu_range"]
 bkg_sigma_range = config["bkg_sigma_range"]
 sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
-max_range = config["max_range"]
+max_size = config["max_size"]
 
 
 from time import gmtime, strftime
@@ -91,8 +91,8 @@ def gen(sig, bkg):
   bkgsig = bkg[1]
   bkgrate = bkg[2]
 
-  sig = torch.Tensor(generate_data(sigmu, sigsig, np.array([sigrate]*ntests), max_range)).detach()
-  bkg = torch.Tensor(generate_data(bkgmu, bkgsig, np.array([bkgrate]*ntests), max_range)).detach()
+  sig = torch.Tensor(generate_data(sigmu, sigsig, np.array([sigrate]*ntests), max_size)).detach()
+  bkg = torch.Tensor(generate_data(bkgmu, bkgsig, np.array([bkgrate]*ntests), max_size)).detach()
 
   return \
     torch.cat \
@@ -128,6 +128,7 @@ nets = [localnet , globalnet]
 # build the optimisers
 allparams = [ p for net in nets for p in net.parameters() ]
 optim = torch.optim.Adam(allparams, lr = lr)
+sched = torch.optim.lr_scheduler.ReduceLROnPlateau(optim)
 
 for net in nets:
   net.to(device)
@@ -214,6 +215,7 @@ for epoch in range(number_epochs):
 
     writer.add_scalar("avgloss", sumloss / epoch_size, global_step=epoch)
     writer.add_scalar("avgdist", sumdist / epoch_size, global_step=epoch)
+    sched.step(sumloss / epoch_size)
 
 
   print("starting epoch %03d" % epoch)
@@ -263,8 +265,8 @@ for epoch in range(number_epochs):
       )
 
 
-    siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_range)
-    bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_range)
+    siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
+    bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
 
     inputs = \
       torch.cat \
@@ -276,7 +278,7 @@ for epoch in range(number_epochs):
 
     targs = torch.Tensor(targs).detach()
 
-    guesses , _ , l = utils.loss(targs, mus, cov)
+    l = utils.loss(targs, mus, cov)
 
     loss = l.mean()
 
@@ -286,7 +288,7 @@ for epoch in range(number_epochs):
       torch.nn.utils.clip_grad_norm_(allparams, grad_clip)
 
     sumloss += loss.detach().item()
-    sumdist += torch.sqrt((guesses[:,0] - targs[:,0])**2).mean().item()
+    sumdist += torch.sqrt((mus[:,0] - targs[:,0])**2).mean().item()
 
     optim.step()
 
