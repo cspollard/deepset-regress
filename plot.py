@@ -1,3 +1,8 @@
+# TODO
+# check signal bias vs nsig and nbkg
+# check evolution vs bkg and sig overlap
+# 
+
 import torch
 from sys import argv
 import json
@@ -187,13 +192,16 @@ sigranges = list(range(10, 90))
 bkgranges = list(range(10, 100, 20))
 bkgranges.reverse()
 
-fig = figure.Figure()
-ax = fig.add_subplot(111)
+fig1 = figure.Figure()
+ax1 = fig1.add_subplot(111)
+fig2 = figure.Figure()
+ax2 = fig2.add_subplot(111)
 colors = ["red", "blue", "green", "black", "orange", "purple", "cyan", "gray", "brown"]
 
 icolor = 0
 for nbkg in bkgranges:
-  ratios = []
+  uncertratios = []
+  correlations = []
   for nsig in sigranges:
     siginputs = rng.normal(avg(sig_mu_range), avg(sig_sigma_range), max_size)
     siginputs[nsig:] = 0.0
@@ -217,16 +225,23 @@ for nbkg in bkgranges:
       , targlen
       )
 
-    ratios.append(torch.sqrt(cov[0,0,0]).item() / np.sqrt(nsig))
+    uncertratios.append(torch.sqrt(cov[0,0,0]).item() / np.sqrt(nsig))
+    correlations.append((cov[0,1,0] / torch.sqrt(cov[0,0,0] * cov[0,1,1])).item())
     continue
 
-  ax.plot(sigranges, ratios, "-", color=colors[icolor], label="$n_{bkg}^{true} = %d$" % nbkg)
+  ax1.plot(sigranges, uncertratios, "-", color=colors[icolor], label="$n_{bkg}^{true} = %d$" % nbkg)
+  ax2.plot(sigranges, correlations, "-", color=colors[icolor], label="$n_{bkg}^{true} = %d$" % nbkg)
 
   icolor = icolor + 1
   continue
 
-ax.set_xlabel("$n_{sig}^{true}$")
-ax.set_ylabel("$\sigma_{sig}^n / \sqrt{n_{sig}^{true}}$")
-ax.legend()
+ax1.set_xlabel("$n_{sig}^{true}$")
+ax1.set_ylabel("$\sigma_{sig}^n / \sqrt{n_{sig}^{true}}$")
+ax1.legend()
+fig1.savefig(outfolder + "/siguncerts.pdf")
 
-fig.savefig(outfolder + "/siguncerts.pdf")
+ax2.set_xlabel("$n_{sig}^{true}$")
+ax2.set_ylabel("$n_{sig}$ - $n_{bkg}$ correlation")
+ax2.legend()
+
+fig2.savefig(outfolder + "/correlations.pdf")
