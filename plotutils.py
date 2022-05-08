@@ -43,7 +43,7 @@ def save_fig(fig, name, writer, epoch, outdir):
   return
 
 
-def profile(bins, xs, ys):
+def profile(bins, xs, ys, xlabel="", ylabel=""):
     bincenters, binwidths, means , stds = \
       utils.binnedGauss(bins, xs, ys)
 
@@ -57,6 +57,9 @@ def profile(bins, xs, ys):
       , marker = '.'
       )
 
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
     return fig
 
 
@@ -68,6 +71,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
   for i in range(len(labels)):
     bmin = binranges[i][0]
     bmax = binranges[i][1]
+    label = labels[i]
 
     fig = figure.Figure()
 
@@ -81,7 +85,7 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
       , density=True
       )
 
-    name = prefix + "true_%s" % labels[i]
+    name = prefix + "true_%s" % label
     save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
 
@@ -89,22 +93,25 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     thesesigmas = sigmas[:,i]
     diffs = thesemus - targs
 
-    pulls = diffs / thesesigmas
+    residuals = diffs / thesesigmas
 
     ax = fig.add_subplot(111)
     ax.hist \
-      ( pulls
+      ( residuals
       , bins=np.mgrid[-5:5:101j]
       , color="blue"
       , density=True
       )
-
     xs = np.mgrid[-5:5:100j]
     ys = gaussian(0, 1)(xs)
 
-    ax.plot(xs, ys, "--", color="black")
+    ax.plot(xs, ys, "--", color="black", label="standard normal")
 
-    name = prefix + "pulls_%s" % labels[i]
+    ax.legend()
+    ax.set_xlabel(label + " residual")
+    ax.set_ylabel("normalized")
+
+    name = prefix + "residuals_%s" % label
     save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
 
@@ -116,13 +123,16 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
       , density=True
       )
 
-    name = prefix + "diffs_%s" % labels[i]
+    ax.set_xlabel(label + " regressed - true")
+    ax.set_ylabel("normalized")
+
+    name = prefix + "diffs_%s" % label
     save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
 
 
-    name = prefix + "diffs_evolution_%s" % labels[i]
-    fig = profile(np.mgrid[bmin:bmax:11j], targs, diffs)
+    name = prefix + "diffs_evolution_%s" % label
+    fig = profile(np.mgrid[bmin:bmax:11j], targs, diffs, xlabel=label, ylabel="bias + std-dev")
     save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
 
@@ -145,15 +155,14 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     ax.set_xlim(-3, 3)
     ax.legend()
 
-    name = prefix + "response_%s" % labels[i]
+    name = prefix + "response_%s" % label
     save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
 
-    name = prefix + "response_evolution_%s" % labels[i]
-    fig = profile(np.mgrid[bmin:bmax:11j], targs, resps)
+    name = prefix + "response_evolution_%s" % label
+    fig = profile(np.mgrid[bmin:bmax:11j], targs, resps, xlabel=label, ylabel = "response mean + std-dev")
     save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
-
 
     ax = fig.add_subplot(111)
     ax.hist \
@@ -163,7 +172,10 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
       , density=True
       )
 
-    name = prefix + "regressed_%s" % labels[i]
+    ax.set_xlabel(label + " regressed")
+    ax.set_ylabel("normalized")
+
+    name = prefix + "regressed_%s" % label
     save_fig(fig, name, writer, epoch, outdir)
 
     fig.clf()
@@ -179,13 +191,11 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
     ax.plot([-10000, 10000], [-10000, 10000], color="red")
     ax.set_xlim(bmin, bmax)
     ax.set_ylim(bmin, bmax)
+    ax.set_xlabel(label + " true")
+    ax.set_ylabel(label + " regressed")
 
-    name = prefix + "true_vs_regressed_%s" % labels[i]
-    try:
-      save_fig(fig, name, writer, epoch, outdir)
-    except ValueError:
-      pass
-
+    name = prefix + "true_vs_regressed_%s" % label
+    save_fig(fig, name, writer, epoch, outdir)
     fig.clf()
 
 
@@ -195,8 +205,8 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
       writer.add_scalar(prefix + "meandiff_%s" % labels[i], np.mean(diffs), global_step=epoch)
       writer.add_scalar(prefix + "stddiff_%s" % labels[i], np.std(diffs), global_step=epoch)
       writer.add_scalar(prefix + "meansigma_%s" % labels[i], np.mean(thesesigmas), global_step=epoch)
-      writer.add_scalar(prefix + "meanpull_%s" % labels[i], np.mean(pulls), global_step=epoch)
-      writer.add_scalar(prefix + "stdpull_%s" % labels[i], np.std(pulls), global_step=epoch)
+      writer.add_scalar(prefix + "meanresidual_%s" % labels[i], np.mean(residuals), global_step=epoch)
+      writer.add_scalar(prefix + "stdresidual_%s" % labels[i], np.std(residuals), global_step=epoch)
 
     continue
 

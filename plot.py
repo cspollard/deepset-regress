@@ -5,6 +5,7 @@ import plotutils
 import utils
 import os
 import numpy as np
+import matplotlib.figure as figure
 
 
 print("torch version:", torch.__version__)
@@ -116,135 +117,116 @@ binranges = \
   , (bkg_norm_range[0], bkg_norm_range[1])
   ]
 
-targs = \
-  rng.uniform \
-  ( low=(sig_norm_range[0], bkg_norm_range[0])
-  , high=(sig_norm_range[1], bkg_norm_range[1])
-  , size=(ntests,2)
-  )
+# targs = \
+#   rng.uniform \
+#   ( low=(sig_norm_range[0], bkg_norm_range[0])
+#   , high=(sig_norm_range[1], bkg_norm_range[1])
+#   , size=(ntests,2)
+#   )
 
-sigmus = \
-  rng.uniform \
-  ( low=sig_mu_range[0]
-  , high=sig_mu_range[1]
-  , size=ntests
-  )
+# sigmus = \
+#   rng.uniform \
+#   ( low=sig_mu_range[0]
+#   , high=sig_mu_range[1]
+#   , size=ntests
+#   )
 
-sigsigmas = \
-  rng.uniform \
-  ( low=sig_sigma_range[0]
-  , high=sig_sigma_range[1]
-  , size=ntests
-  )
+# sigsigmas = \
+#   rng.uniform \
+#   ( low=sig_sigma_range[0]
+#   , high=sig_sigma_range[1]
+#   , size=ntests
+#   )
 
-bkgmus = \
-  rng.uniform \
-  ( low=bkg_mu_range[0]
-  , high=bkg_mu_range[1]
-  , size=ntests
-  )
+# bkgmus = \
+#   rng.uniform \
+#   ( low=bkg_mu_range[0]
+#   , high=bkg_mu_range[1]
+#   , size=ntests
+#   )
 
-bkgsigmas = \
-  rng.uniform \
-  ( low=bkg_sigma_range[0]
-  , high=bkg_sigma_range[1]
-  , size=ntests
-  )
-
-
-siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
-bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
-
-inputs = \
-  torch.cat \
-  ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
-  , axis = 2
-  )
-
-mus , cov = \
-  utils.regress \
-  ( localnet
-  , globalnet
-  , inputs
-  , targlen
-  )
-
-l = utils.loss(torch.Tensor(targs), mus, cov)
-
-plotutils.valid_plots \
-  ( mus.detach().numpy()
-  , cov.detach().numpy()
-  , targs
-  , labels
-  , binranges
-  , None
-  , None
-  , outfolder
-  )
-
-targs = \
-  rng.uniform \
-  ( low=(25, 25)
-  , high=(75, 75)
-  , size=(ntests,2)
-  )
-
-sigmus = \
-  rng.uniform \
-  ( low=0.75*sig_mu_range[0] + 0.25*sig_mu_range[1]
-  , high=0.25*sig_mu_range[0] + 0.75*sig_mu_range[1]
-  , size=ntests
-  )
-
-sigsigmas = \
-  rng.uniform \
-  ( low=0.75*sig_sigma_range[0] + 0.25*sig_sigma_range[1]
-  , high=0.25*sig_sigma_range[0] + 0.75*sig_sigma_range[1]
-  , size=ntests
-  )
-
-bkgmus = \
-  rng.uniform \
-  ( low=0.75*bkg_mu_range[0] + 0.25*bkg_mu_range[1]
-  , high=0.25*bkg_mu_range[0] + 0.75*bkg_mu_range[1]
-  , size=ntests
-  )
-
-bkgsigmas = \
-  rng.uniform \
-  ( low=0.75*bkg_sigma_range[0] + 0.25*bkg_sigma_range[1]
-  , high=0.25*bkg_sigma_range[0] + 0.75*bkg_sigma_range[1]
-  , size=ntests
-  )
+# bkgsigmas = \
+#   rng.uniform \
+#   ( low=bkg_sigma_range[0]
+#   , high=bkg_sigma_range[1]
+#   , size=ntests
+#   )
 
 
-siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
-bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
+# siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
+# bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
 
-inputs = \
-  torch.cat \
-  ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
-  , axis = 2
-  )
+# inputs = \
+#   torch.cat \
+#   ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
+#   , axis = 2
+#   )
 
-mus , cov = \
-  utils.regress \
-  ( localnet
-  , globalnet
-  , inputs
-  , targlen
-  )
+# mus , cov = \
+#   utils.regress \
+#   ( localnet
+#   , globalnet
+#   , inputs
+#   , targlen
+#   )
 
-l = utils.loss(torch.Tensor(targs), mus, cov)
+# l = utils.loss(torch.Tensor(targs), mus, cov)
 
-plotutils.valid_plots \
-  ( mus.detach().numpy()
-  , cov.detach().numpy()
-  , targs
-  , labels
-  , binranges
-  , None
-  , None
-  , outfolder
-  , prefix="25-75_"
-  )
+# plotutils.valid_plots \
+#   ( mus.detach().numpy()
+#   , cov.detach().numpy()
+#   , targs
+#   , labels
+#   , binranges
+#   , None
+#   , None
+#   , outfolder
+#   )
+
+sigranges = list(range(10, 90))
+bkgranges = list(range(10, 100, 20))
+bkgranges.reverse()
+
+fig = figure.Figure()
+ax = fig.add_subplot(111)
+colors = ["red", "blue", "green", "black", "orange", "purple", "cyan", "gray", "brown"]
+
+icolor = 0
+for nbkg in bkgranges:
+  ratios = []
+  for nsig in sigranges:
+    siginputs = rng.normal(avg(sig_mu_range), avg(sig_sigma_range), max_size)
+    siginputs[nsig:] = 0.0
+    siginputs = siginputs.reshape(1, 1, max_size)
+
+    bkginputs = rng.normal(avg(bkg_mu_range), avg(bkg_sigma_range), max_size)
+    bkginputs[nbkg:] = 0.0
+    bkginputs = bkginputs.reshape(1, 1, max_size)
+
+    inputs = \
+      torch.cat \
+      ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
+      , axis = 2
+      )
+
+    mus , cov = \
+      utils.regress \
+      ( localnet
+      , globalnet
+      , inputs
+      , targlen
+      )
+
+    ratios.append(torch.sqrt(cov[0,0,0]).item() / np.sqrt(nsig))
+    continue
+
+  ax.plot(sigranges, ratios, "-", color=colors[icolor], label="$n_{bkg}^{true} = %d$" % nbkg)
+
+  icolor = icolor + 1
+  continue
+
+ax.set_xlabel("$n_{sig}^{true}$")
+ax.set_ylabel("$\sigma_{sig}^n / \sqrt{n_{sig}^{true}}$")
+ax.legend()
+
+fig.savefig(outfolder + "/siguncerts.pdf")
