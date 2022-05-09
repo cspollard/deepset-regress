@@ -188,9 +188,10 @@ binranges = \
 #   , outfolder
 #   )
 
-sigranges = list(range(10, 90))
-bkgranges = list(range(10, 100, 20))
+sigranges = list(range(20, 70))
+bkgranges = list(range(10, 80, 10))
 bkgranges.reverse()
+nreplicas = 100
 
 fig1 = figure.Figure()
 ax1 = fig1.add_subplot(111)
@@ -203,13 +204,13 @@ for nbkg in bkgranges:
   uncertratios = []
   correlations = []
   for nsig in sigranges:
-    siginputs = rng.normal(avg(sig_mu_range), avg(sig_sigma_range), max_size)
-    siginputs[nsig:] = 0.0
-    siginputs = siginputs.reshape(1, 1, max_size)
+    siginputs = rng.normal(avg(sig_mu_range), avg(sig_sigma_range), max_size*nreplicas)
+    siginputs = siginputs.reshape(nreplicas, 1, max_size)
+    siginputs[:,:,nsig:] = 0.0
 
-    bkginputs = rng.normal(avg(bkg_mu_range), avg(bkg_sigma_range), max_size)
-    bkginputs[nbkg:] = 0.0
-    bkginputs = bkginputs.reshape(1, 1, max_size)
+    bkginputs = rng.normal(avg(bkg_mu_range), avg(bkg_sigma_range), max_size*nreplicas)
+    bkginputs = bkginputs.reshape(nreplicas, 1, max_size)
+    bkginputs[:,:,nbkg:] = 0.0
 
     inputs = \
       torch.cat \
@@ -225,8 +226,8 @@ for nbkg in bkgranges:
       , targlen
       )
 
-    uncertratios.append(torch.sqrt(cov[0,0,0]).item() / np.sqrt(nsig))
-    correlations.append((cov[0,1,0] / torch.sqrt(cov[0,0,0] * cov[0,1,1])).item())
+    uncertratios.append(torch.sqrt(cov[:,0,0]).mean().item() / np.sqrt(nsig))
+    correlations.append((cov[:,1,0] / torch.sqrt(cov[:,0,0] * cov[:,1,1])).mean().item())
     continue
 
   ax1.plot(sigranges, uncertratios, "-", color=colors[icolor], label="$n_{bkg}^{true} = %d$" % nbkg)
