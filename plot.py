@@ -237,12 +237,12 @@ for nbkg in bkgranges:
   continue
 
 ax1.set_xlabel("$n_{sig}^{true}$")
-ax1.set_ylabel("$\sigma_{sig}^n / \sqrt{n_{sig}^{true}}$")
+ax1.set_ylabel("$\sigma_{sig}^\lambda / \sqrt{n_{sig}^{true}}$")
 ax1.legend()
 fig1.savefig(outfolder + "/siguncerts.pdf")
 
 ax2.set_xlabel("$n_{sig}^{true}$")
-ax2.set_ylabel("$n_{sig}$ - $n_{bkg}$ correlation")
+ax2.set_ylabel("$\lambda_{sig}$ - $\lambda_{bkg}$ correlation")
 ax2.legend()
 
 fig2.savefig(outfolder + "/correlations.pdf")
