@@ -1,5 +1,5 @@
-{ "globalnodes" : [ 64 , 64 , 64 , 64 , 64 , 64 ]
-, "localnodes" : [ 32 , 32 , 32 , 32 ]
+{ "globalnodes" : [ 64 , 64 , 64 , 64 ]
+, "localnodes" : [ 32 , 32 ]
 
 , "lr" : 1e-3
 , "outdir" : "tb"
@@ -14,7 +14,7 @@
 , "sig_sigma_range" : [ 0.5 , 1.5 ]
 
 , "bkg_mu_range" : [ 10.0 , 15.0 ]
-, "bkg_sigma_range" : [ 4.0 , 6.0 ]
+, "bkg_sigma_range" : [ 4.0 , 10.0 ]
 
 , "sig_norm_range" : [ 0.0 , 100.0 ]
 , "bkg_norm_range" : [ 0.0 , 100.0 ]

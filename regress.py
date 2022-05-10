@@ -163,6 +163,7 @@ for epoch in range(number_epochs):
   pull = bias / uncert
 
   writer.add_scalar("avgbias50", bias.mean().item(), global_step=epoch)
+  writer.add_scalar("avgbias50", bias.mean().item(), global_step=epoch)
   writer.add_scalar("avgcorr50", corr.mean().item(), global_step=epoch)
   writer.add_scalar("avguncert50", uncert.mean().item(), global_step=epoch)
   writer.add_scalar("avgpull50", pull.mean().item(), global_step=epoch)
@@ -213,6 +214,7 @@ for epoch in range(number_epochs):
   # insert plotting here.
   if epoch > 0:
 
+    writer.add_scalar("learningrate", sched.get_lr(), global_step=epoch)
     writer.add_scalar("avgloss", sumloss / epoch_size, global_step=epoch)
     writer.add_scalar("avgdist", sumdist / epoch_size, global_step=epoch)
     sched.step(sumloss / epoch_size)
