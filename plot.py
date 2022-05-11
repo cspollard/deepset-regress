@@ -122,71 +122,71 @@ binranges = \
   , (bkg_norm_range[0], bkg_norm_range[1])
   ]
 
-# targs = \
-#   rng.uniform \
-#   ( low=(sig_norm_range[0], bkg_norm_range[0])
-#   , high=(sig_norm_range[1], bkg_norm_range[1])
-#   , size=(ntests,2)
-#   )
+targs = \
+  rng.uniform \
+  ( low=(sig_norm_range[0], bkg_norm_range[0])
+  , high=(sig_norm_range[1], bkg_norm_range[1])
+  , size=(ntests,2)
+  )
 
-# sigmus = \
-#   rng.uniform \
-#   ( low=sig_mu_range[0]
-#   , high=sig_mu_range[1]
-#   , size=ntests
-#   )
+sigmus = \
+  rng.uniform \
+  ( low=sig_mu_range[0]
+  , high=sig_mu_range[1]
+  , size=ntests
+  )
 
-# sigsigmas = \
-#   rng.uniform \
-#   ( low=sig_sigma_range[0]
-#   , high=sig_sigma_range[1]
-#   , size=ntests
-#   )
+sigsigmas = \
+  rng.uniform \
+  ( low=sig_sigma_range[0]
+  , high=sig_sigma_range[1]
+  , size=ntests
+  )
 
-# bkgmus = \
-#   rng.uniform \
-#   ( low=bkg_mu_range[0]
-#   , high=bkg_mu_range[1]
-#   , size=ntests
-#   )
+bkgmus = \
+  rng.uniform \
+  ( low=bkg_mu_range[0]
+  , high=bkg_mu_range[1]
+  , size=ntests
+  )
 
-# bkgsigmas = \
-#   rng.uniform \
-#   ( low=bkg_sigma_range[0]
-#   , high=bkg_sigma_range[1]
-#   , size=ntests
-#   )
+bkgsigmas = \
+  rng.uniform \
+  ( low=bkg_sigma_range[0]
+  , high=bkg_sigma_range[1]
+  , size=ntests
+  )
 
 
-# siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
-# bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
+siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
+bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
 
-# inputs = \
-#   torch.cat \
-#   ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
-#   , axis = 2
-#   )
+inputs = \
+  torch.cat \
+  ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
+  , axis = 2
+  )
 
-# mus , cov = \
-#   utils.regress \
-#   ( localnet
-#   , globalnet
-#   , inputs
-#   , targlen
-#   )
+mus , cov = \
+  utils.regress \
+  ( localnet
+  , globalnet
+  , inputs
+  , targlen
+  )
 
-# l = utils.loss(torch.Tensor(targs), mus, cov)
+l = utils.loss(torch.Tensor(targs), mus, cov)
 
-# plotutils.valid_plots \
-#   ( mus.detach().numpy()
-#   , cov.detach().numpy()
-#   , targs
-#   , labels
-#   , binranges
-#   , None
-#   , None
-#   , outfolder
-#   )
+plotutils.valid_plots \
+  ( mus.detach().numpy()
+  , cov.detach().numpy()
+  , targs
+  , labels
+  , binranges
+  , None
+  , None
+  , outfolder
+  )
 
 sigranges = list(range(20, 70))
 bkgranges = list(range(10, 80, 10))

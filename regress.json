@@ -1,5 +1,5 @@
-{ "globalnodes" : [ 64 , 64 , 64 , 64 ]
-, "localnodes" : [ 32 , 32 ]
+{ "globalnodes" : [ 64 , 64 , 64 , 64 , 64 , 64 ]
+, "localnodes" : [ 32 , 32 , 32 , 32 ]
 
 , "lr" : 1e-3
 , "outdir" : "tb"
