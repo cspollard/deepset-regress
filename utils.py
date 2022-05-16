@@ -24,7 +24,7 @@ def regress(localnet, globalnet, feats, outsize):
 
   # extract the mean and covariance of the regressed posterior
   outs = globalnet(sums)
-  mus = outs[: , :outsize]
+  mus = torch.exp(outs[: , :outsize])
   rest = outs[:, outsize:]
   cov = uncholesky(uppertriangle(rest, outsize))
 

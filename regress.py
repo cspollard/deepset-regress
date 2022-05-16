@@ -214,7 +214,7 @@ for epoch in range(number_epochs):
   # insert plotting here.
   if epoch > 0:
 
-    writer.add_scalar("learningrate", sched.get_lr(), global_step=epoch)
+    writer.add_scalar("learningrate", optim.param_groups[0]['lr'], global_step=epoch)
     writer.add_scalar("avgloss", sumloss / epoch_size, global_step=epoch)
     writer.add_scalar("avgdist", sumdist / epoch_size, global_step=epoch)
     sched.step(sumloss / epoch_size)
