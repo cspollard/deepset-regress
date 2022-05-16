@@ -55,6 +55,9 @@ runname = os.path.join(outdir, time_suffix)
 shutil.copyfile(argv[1], outdir + "/" + time_suffix + ".json")
 writer = SummaryWriter(runname)
 
+# we want a 2D gaussian PDF
+targlen = 2
+
 rng = np.random.default_rng()
 
 def generate_data(mus, sigs, norms, max_size):
@@ -70,11 +73,12 @@ def generate_data(mus, sigs, norms, max_size):
   
   return outs
 
+
 def avg(l):
   s = sum(l)
   return s / len(l)
 
-ntests = 1000
+ntests = 10000
 
 testsig_mu = avg(sig_mu_range) * np.ones(ntests)
 testsig_sigma = avg(sig_sigma_range) * np.ones(ntests)
@@ -100,9 +104,50 @@ def gen(sig, bkg):
     , axis = 2
     ).detach()
 
+testtargs = \
+  rng.uniform \
+  ( low=(sig_norm_range[0], bkg_norm_range[0])
+  , high=(sig_norm_range[1], bkg_norm_range[1])
+  , size=(ntests,2)
+  )
 
-# we want a 2D gaussian PDF
-targlen = 2
+testsigmus = \
+  rng.uniform \
+  ( low=sig_mu_range[0]
+  , high=sig_mu_range[1]
+  , size=ntests
+  )
+
+testsigsigmas = \
+  rng.uniform \
+  ( low=sig_sigma_range[0]
+  , high=sig_sigma_range[1]
+  , size=ntests
+  )
+
+testbkgmus = \
+  rng.uniform \
+  ( low=bkg_mu_range[0]
+  , high=bkg_mu_range[1]
+  , size=ntests
+  )
+
+testbkgsigmas = \
+  rng.uniform \
+  ( low=bkg_sigma_range[0]
+  , high=bkg_sigma_range[1]
+  , size=ntests
+  )
+
+testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0], max_size)
+testbkginputs = generate_data(testbkgmus, testbkgsigmas, testtargs[:,1], max_size)
+
+testinputs = \
+  torch.cat \
+  ( [ torch.Tensor(testsiginputs).detach() , torch.Tensor(testbkginputs).detach() ]
+  , axis = 2
+  ).detach()
+
 
 localnodes = [ 1 ] + localnodes
 
@@ -139,6 +184,8 @@ sumloss = 0
 sumdist = 0
 for epoch in range(number_epochs):
   gc.collect()
+  print("garbage:")
+  print(gc.garbage)
 
   torch.save(localnet.state_dict(), runname + "/localnet.pth")
   torch.save(globalnet.state_dict(), runname + "/globalnet.pth")
@@ -150,68 +197,7 @@ for epoch in range(number_epochs):
   globalnet.zero_grad()
 
   print("plotting")
-  # TODO:
-  # plot spread / sqrt(N)
 
-  inputs = gen([testsig_mu, testsig_sigma, 50.0], [testbkg_mu, testbkg_sigma, 50.0])
-
-  mus , cov = utils.regress(localnet, globalnet, inputs, 2)
-  corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
-
-  bias = mus[:,0] - 50.0 
-  uncert = torch.sqrt(cov[:,0,0])
-  pull = bias / uncert
-
-  writer.add_scalar("avgbias50", bias.mean().item(), global_step=epoch)
-  writer.add_scalar("avgbias50", bias.mean().item(), global_step=epoch)
-  writer.add_scalar("avgcorr50", corr.mean().item(), global_step=epoch)
-  writer.add_scalar("avguncert50", uncert.mean().item(), global_step=epoch)
-  writer.add_scalar("avgpull50", pull.mean().item(), global_step=epoch)
-  writer.add_scalar("spread50", bias.std().item(), global_step=epoch)
-
-  localnet.zero_grad()
-  globalnet.zero_grad()
-
-
-  inputs = gen([testsig_mu, testsig_sigma, 25.0], [testbkg_mu, testbkg_sigma, 25.0])
-
-  mus , cov = utils.regress(localnet, globalnet, inputs, 2)
-  corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
-
-  bias = mus[:,0] - 25.0 
-  uncert = torch.sqrt(cov[:,0,0])
-  pull = bias / uncert
-
-  writer.add_scalar("avgbias25", bias.mean().item(), global_step=epoch)
-  writer.add_scalar("avgcorr25", corr.mean().item(), global_step=epoch)
-  writer.add_scalar("avguncert25", uncert.mean().item(), global_step=epoch)
-  writer.add_scalar("avgpull25", pull.mean().item(), global_step=epoch)
-  writer.add_scalar("spread25", bias.std().item(), global_step=epoch)
-
-  localnet.zero_grad()
-  globalnet.zero_grad()
-
-
-  inputs = gen([testsig_mu, testsig_sigma, 05.0], [testbkg_mu, testbkg_sigma, 05.0])
-
-  mus , cov = utils.regress(localnet, globalnet, inputs, 2)
-  corr = cov[:,0,1] / torch.sqrt(cov[:,0,0] * cov[:,1,1])
-
-  bias = mus[:,0] - 05.0 
-  uncert = torch.sqrt(cov[:,0,0])
-  pull = bias / uncert
-
-  writer.add_scalar("avgbias05", bias.mean().item(), global_step=epoch)
-  writer.add_scalar("avgcorr05", corr.mean().item(), global_step=epoch)
-  writer.add_scalar("avguncert05", uncert.mean().item(), global_step=epoch)
-  writer.add_scalar("avgpull05", pull.mean().item(), global_step=epoch)
-  writer.add_scalar("spread05", bias.std().item(), global_step=epoch)
-
-  localnet.zero_grad()
-  globalnet.zero_grad()
-
-
-  # insert plotting here.
   if epoch > 0:
 
     writer.add_scalar("learningrate", optim.param_groups[0]['lr'], global_step=epoch)
@@ -219,6 +205,26 @@ for epoch in range(number_epochs):
     writer.add_scalar("avgdist", sumdist / epoch_size, global_step=epoch)
     sched.step(sumloss / epoch_size)
 
+
+  mus , cov = utils.regress(localnet, globalnet, testinputs, 2)
+
+  labels = [ "nsignal", "nbkg" ]
+  binranges = \
+    [ (0, 75)
+    , (0, 75)
+    ]
+
+
+  plotutils.valid_plots \
+    ( mus.detach().numpy()
+    , cov.detach().numpy()
+    , testtargs
+    , labels
+    , binranges
+    , writer
+    , epoch
+    , None
+    )
 
   print("starting epoch %03d" % epoch)
 

@@ -210,5 +210,4 @@ def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, pre
 
     continue
 
-
   return

@@ -114,7 +114,6 @@ except OSError as error:
   pass
 
 
-
 labels = [ "nsignal", "nbkg" ]
 
 binranges = \
