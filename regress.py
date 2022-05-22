@@ -44,7 +44,6 @@ bkg_mu_range = config["bkg_mu_range"]
 bkg_sigma_range = config["bkg_sigma_range"]
 sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
-max_size = config["max_size"]
 
 
 from time import gmtime, strftime
@@ -187,12 +186,8 @@ for epoch in range(number_epochs):
 
   mus , cov = utils.regress(localnet, globalnet, testinputs, 2)
 
-  labels = [ "nsignal", "nbkg" ]
-  binranges = \
-    [ (0, 75)
-    , (0, 75)
-    ]
-
+  labels = [ "signalrate", "bkgrate" ]
+  binranges = [ sig_norm_range , bkg_norm_range ]
 
   plotutils.valid_plots \
     ( mus.detach().numpy()

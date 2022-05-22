@@ -21,7 +21,7 @@ def regress(localnet, globalnet, feats, outsize):
   tmp = localnet(feats.tensor)
 
   # sum the outputs of the local networks
-  sums = VarLenSeq( tmp , feats.lengths).sum()
+  sums = VarLenSeq( tmp , feats.lengths ).sum()
 
   # extract the mean and covariance of the regressed posterior
   outs = globalnet(sums)

@@ -11,6 +11,7 @@ import utils
 import os
 import numpy as np
 import matplotlib.figure as figure
+from VarLenSeq import VarLenSeq
 
 
 print("torch version:", torch.__version__)
@@ -45,24 +46,23 @@ bkg_mu_range = config["bkg_mu_range"]
 bkg_sigma_range = config["bkg_sigma_range"]
 sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
-max_size = config["max_size"]
-
 
 
 rng = np.random.default_rng()
 
-def generate_data(mus, sigs, norms, max_size):
+def generate_data(mus, sigs, norms):
   batches = norms.size
   ns = rng.poisson(norms)
+  max_size = np.max(ns)
 
   mus = np.broadcast_to(mus, (max_size, 1, batches)).T
   sigs = np.broadcast_to(sigs, (max_size, 1, batches)).T
 
   outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
-  for i in range(batches):
-    outs[i , 0 , ns[i]:] = 0.0
+  ns = torch.tensor(ns, dtype=torch.int)
   
-  return outs
+  return VarLenSeq(torch.Tensor(outs).detach(), ns)
+
 
 def avg(l):
   s = sum(l)
@@ -157,14 +157,10 @@ bkgsigmas = \
   )
 
 
-siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
-bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
+siginputs = generate_data(sigmus, sigsigmas, targs[:,0])
+bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1])
 
-inputs = \
-  torch.cat \
-  ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
-  , axis = 2
-  )
+inputs = siginputs.cat(bkginputs)
 
 mus , cov = \
   utils.regress \
