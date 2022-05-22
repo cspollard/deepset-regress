@@ -29,6 +29,7 @@ device = config["device"]
 batch_size = config["batch_size"]
 epoch_size = config["epoch_size"]
 number_epochs = config["number_epochs"]
+patience = config["patience"]
 
 grad_clip = config["grad_clip"]
 
@@ -151,7 +152,7 @@ nets = [localnet , globalnet]
 # build the optimisers
 allparams = [ p for net in nets for p in net.parameters() ]
 optim = torch.optim.Adam(allparams, lr = lr)
-sched = torch.optim.lr_scheduler.ReduceLROnPlateau(optim)
+sched = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=patience)
 
 for net in nets:
   net.to(device)
