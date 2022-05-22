@@ -31,5 +31,10 @@ class VarLenSeq:
 
   def mean(self):
     s = self.sum()
-    return s / self.lengths
+    for i in range(self.lengths.size()[0]):
+      l = self.lengths[i]
+      if l != 0:
+        s[i] = s[i] / l
+
+    return s
 
