@@ -10,6 +10,7 @@ import plotutils
 import utils
 import numpy as np
 import gc
+from VarLenSeq import VarLenSeq
 
 
 print("torch version:", torch.__version__)
@@ -60,49 +61,31 @@ targlen = 2
 
 rng = np.random.default_rng()
 
-def generate_data(mus, sigs, norms, max_size):
+def generate_data(mus, sigs, norms):
   batches = norms.size
   ns = rng.poisson(norms)
+  max_size = np.max(ns)
 
   mus = np.broadcast_to(mus, (max_size, 1, batches)).T
   sigs = np.broadcast_to(sigs, (max_size, 1, batches)).T
 
   outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
-  for i in range(batches):
-    outs[i , 0 , ns[i]:] = 0.0
+  ns = torch.tensor(ns, dtype=torch.int)
   
-  return outs
+  return VarLenSeq(torch.Tensor(outs).detach(), ns)
 
 
 def avg(l):
   s = sum(l)
   return s / len(l)
 
-ntests = 10000
+ntests = 1000
 
 testsig_mu = avg(sig_mu_range) * np.ones(ntests)
 testsig_sigma = avg(sig_sigma_range) * np.ones(ntests)
 
 testbkg_mu = avg(bkg_mu_range) * np.ones(ntests)
 testbkg_sigma = avg(bkg_sigma_range) * np.ones(ntests)
-
-def gen(sig, bkg):
-  sigmu = sig[0]
-  sigsig = sig[1]
-  sigrate = sig[2]
-
-  bkgmu = bkg[0]
-  bkgsig = bkg[1]
-  bkgrate = bkg[2]
-
-  sig = torch.Tensor(generate_data(sigmu, sigsig, np.array([sigrate]*ntests), max_size)).detach()
-  bkg = torch.Tensor(generate_data(bkgmu, bkgsig, np.array([bkgrate]*ntests), max_size)).detach()
-
-  return \
-    torch.cat \
-    ( [ sig , bkg ]
-    , axis = 2
-    ).detach()
 
 testtargs = \
   rng.uniform \
@@ -139,15 +122,11 @@ testbkgsigmas = \
   , size=ntests
   )
 
-testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0], max_size)
-testbkginputs = generate_data(testbkgmus, testbkgsigmas, testtargs[:,1], max_size)
+testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0])
+testbkginputs = generate_data(testbkgmus, testbkgsigmas, testtargs[:,1])
 
-testinputs = \
-  torch.cat \
-  ( [ torch.Tensor(testsiginputs).detach() , torch.Tensor(testbkginputs).detach() ]
-  , axis = 2
-  ).detach()
 
+testinputs = testsiginputs.cat(testbkginputs)
 
 localnodes = [ 1 ] + localnodes
 
@@ -273,14 +252,10 @@ for epoch in range(number_epochs):
       )
 
 
-    siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
-    bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1], max_size)
+    siginputs = generate_data(sigmus, sigsigmas, targs[:,0])
+    bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1])
 
-    inputs = \
-      torch.cat \
-      ( [ torch.Tensor(siginputs).detach() , torch.Tensor(bkginputs).detach() ]
-      , axis = 2
-      )
+    inputs = siginputs.cat(bkginputs)
 
     mus , cov = utils.regress(localnet, globalnet, inputs, 2)
 

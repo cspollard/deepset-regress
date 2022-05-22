@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from VarLenSeq import VarLenSeq
 
 
 # inserts the element i between each element of xs
@@ -17,10 +18,10 @@ def intersperse(i, xs):
 # (we assume globalnet has the correct number of outputs to accommodate this!)
 def regress(localnet, globalnet, feats, outsize):
   # run the local networks in parallel
-  tmp = localnet(feats)
+  tmp = localnet(feats.tensor)
 
   # sum the outputs of the local networks
-  sums = torch.sum(tmp, axis=2)
+  sums = VarLenSeq( tmp , feats.lengths).sum()
 
   # extract the mean and covariance of the regressed posterior
   outs = globalnet(sums)
