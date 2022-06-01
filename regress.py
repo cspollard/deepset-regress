@@ -45,6 +45,7 @@ bkg_mu_range = config["bkg_mu_range"]
 bkg_sigma_range = config["bkg_sigma_range"]
 sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
+n_bkgs = config["n_bkgs"]
 
 
 from time import gmtime, strftime
@@ -61,8 +62,8 @@ targlen = 2
 
 rng = np.random.default_rng()
 
-def generate_data(mus, sigs, norms):
-  batches = norms.size
+def generate_data(mus, sigs, norms, ntimes=1):
+  batches = norms.size[0]
   ns = rng.poisson(norms)
   max_size = np.max(ns)
 
@@ -87,11 +88,12 @@ testsig_sigma = avg(sig_sigma_range) * np.ones(ntests)
 testbkg_mu = avg(bkg_mu_range) * np.ones(ntests)
 testbkg_sigma = avg(bkg_sigma_range) * np.ones(ntests)
 
+
 testtargs = \
   rng.uniform \
-  ( low=(sig_norm_range[0], bkg_norm_range[0])
-  , high=(sig_norm_range[1], bkg_norm_range[1])
-  , size=(ntests,2)
+  ( low=sig_norm_range[0]
+  , high=sig_norm_range[1]
+  , size=ntests
   )
 
 testsigmus = \
@@ -108,22 +110,39 @@ testsigsigmas = \
   , size=ntests
   )
 
+testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs)
+
+testbkgnorms = \
+  rng.uniform \
+  ( low=bkg_norm_range[0]
+  , high=bkg_norm_range[1]
+  , size=ntests
+  )
+
 testbkgmus = \
   rng.uniform \
   ( low=bkg_mu_range[0]
   , high=bkg_mu_range[1]
-  , size=ntests
+  , size=(ntests, n_bkgs)
   )
 
 testbkgsigmas = \
   rng.uniform \
   ( low=bkg_sigma_range[0]
   , high=bkg_sigma_range[1]
-  , size=ntests
+  , size=(ntests, n_bkgs)
   )
 
-testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0])
-testbkginputs = generate_data(testbkgmus, testbkgsigmas, testtargs[:,1])
+testbkginputs = generate_data(testbkgmus, testbkgsigmas, testbkgnorms)
+for i in (range(n_bkg-1)):
+  testbkgnorms = \
+    rng.uniform \
+    ( low=bkg_norm_range[0]
+    , high=bkg_norm_range[1]
+    , size=ntests
+    )
+
+  testbkginputs = testbkginputs.cat(generate_data(testbkgmus, testbkgsigmas, testbkgnorms))
 
 
 testinputs = testsiginputs.cat(testbkginputs)
@@ -214,9 +233,9 @@ for epoch in range(number_epochs):
 
     targs = \
       rng.uniform \
-      ( low=(sig_norm_range[0], bkg_norm_range[0])
-      , high=(sig_norm_range[1], bkg_norm_range[1])
-      , size=(batch_size,2)
+      ( low=sig_norm_range[0]
+      , high=sig_norm_range[1]
+      , size=batch_size
       )
 
     sigmus = \
@@ -233,6 +252,15 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
+    siginputs = generate_data(sigmus, sigsigmas, targs[:,0])
+
+    testbkgnorms = \
+      rng.uniform \
+      ( low=bkg_norm_range[0]
+      , high=bkg_norm_range[1]
+      , size=ntests
+      )
+
     bkgmus = \
       rng.uniform \
       ( low=bkg_mu_range[0]
@@ -247,9 +275,17 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
+    bkginputs = generate_data(bkgmus, bkgsigmas, bkgnorms)
+    for i in (range(n_bkg-1)):
+      bkgnorms = \
+        rng.uniform \
+        ( low=bkg_norm_range[0]
+        , high=bkg_norm_range[1]
+        , size=ns
+        )
 
-    siginputs = generate_data(sigmus, sigsigmas, targs[:,0])
-    bkginputs = generate_data(bkgmus, bkgsigmas, targs[:,1])
+      bkginputs = bkginputs.cat(generate_data(bkgmus, bkgsigmas, bkgnorms))
+
 
     inputs = siginputs.cat(bkginputs)
 
