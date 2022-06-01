@@ -1,7 +1,7 @@
 { "globalnodes" : [ 64 , 64 , 64 , 64 ]
 , "localnodes" : [ 16 , 16 , 16 , 16 ]
 
-, "lr" : 1e-3
+, "lr" : 1e-4
 , "outdir" : "tb"
 , "device" : "cpu"
 , "patience" : 25

@@ -57,8 +57,7 @@ runname = os.path.join(outdir, time_suffix)
 shutil.copyfile(argv[1], outdir + "/" + time_suffix + ".json")
 writer = SummaryWriter(runname)
 
-# we want a 2D gaussian PDF
-targlen = 2
+targlen = 1
 
 rng = np.random.default_rng()
 
@@ -159,8 +158,6 @@ for i in (range(n_bkgs-1)):
   testbkginputs = testbkginputs.cat(generate_data(testbkgmus, testbkgsigmas, testbkgnorms))
 
 
-print(testsiginputs.lengths)
-print(testbkginputs.lengths)
 testinputs = testsiginputs.cat(testbkginputs)
 
 localnodes = [ 1 ] + localnodes
@@ -319,7 +316,7 @@ for epoch in range(number_epochs):
 
     inputs = siginputs.cat(bkginputs)
 
-    mus , cov = utils.regress(localnet, globalnet, inputs, 2)
+    mus , cov = utils.regress(localnet, globalnet, inputs, 1)
 
     targs = torch.Tensor(targs).detach()
 

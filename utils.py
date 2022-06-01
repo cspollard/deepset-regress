@@ -34,7 +34,6 @@ def regress(localnet, globalnet, feats, outsize):
 
 # returns the "distance" component of the gaussian loss function
 def distloss(targs, mus, cov):
-
   invcov = torch.linalg.inv(cov)
 
   deltas = (targs - mus).unsqueeze(dim=1)
