@@ -1,4 +1,4 @@
-{ "globalnodes" : [ 16 , 16 , 16 , 16 , 16 , 16 ]
+{ "globalnodes" : [ 64 , 64 , 64 , 64 ]
 , "localnodes" : [ 16 , 16 , 16 , 16 ]
 
 , "lr" : 1e-3
@@ -7,17 +7,19 @@
 , "patience" : 25
 
 , "batch_size" : 32
-, "epoch_size" : 128
+, "epoch_size" : 512
 , "number_epochs" : 99999
 , "grad_clip" : 1e-3
 
-, "sig_mu_range" : [ 4.0 , 6.0 ]
+, "sig_mu_range" : [ -10.0 , 10.0 ]
 , "sig_sigma_range" : [ 0.5 , 1.5 ]
 
-, "bkg_mu_range" : [ 10.0 , 15.0 ]
-, "bkg_sigma_range" : [ 4.0 , 10.0 ]
+, "bkg_mu_range" : [ -20.0 , 20.0 ]
+, "bkg_sigma_range" : [ 4.0 , 20.0 ]
 
-, "sig_norm_range" : [ 0.0 , 200.0 ]
-, "bkg_norm_range" : [ 0.0 , 200.0 ]
+, "sig_norm_range" : [ 0.0 , 50.0 ]
+, "bkg_norm_range" : [ 0.0 , 50.0 ]
+
+, "n_bkgs" : 5
 
 }
