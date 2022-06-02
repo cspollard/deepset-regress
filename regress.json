@@ -1,10 +1,10 @@
 { "globalnodes" : [ 64 , 64 , 64 , 64 ]
 , "localnodes" : [ 16 , 16 , 16 , 16 ]
 
-, "lr" : 1e-4
+, "lr" : 1e-3
 , "outdir" : "tb"
 , "device" : "cpu"
-, "patience" : 25
+, "patience" : 10
 
 , "batch_size" : 32
 , "epoch_size" : 512

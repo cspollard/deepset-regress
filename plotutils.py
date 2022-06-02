@@ -63,6 +63,66 @@ def profile(bins, xs, ys, xlabel="", ylabel=""):
     return fig
 
 
+def plotGausses(binning, data, mus, sigmas, norms, colors, labels, xlabel="", ylabel=""):
+  fig = figure.Figure()
+  ax = fig.add_subplot(111)
+
+  h, _, _ = \
+    ax.hist \
+    ( data
+    , bins=binning
+    )
+
+  for i in range(len(h)):
+    h[i] = h[i] / (binning[i+1] - binning[i])
+
+  fig.clf()
+  ax = fig.add_subplot(111)
+  ax.scatter \
+    ( (binning[:-1] + binning[1:]) / 2.0
+    , h
+    , label="data"
+    , color='black'
+    , linewidth=0
+    , marker='o'
+    , zorder=5
+    )
+
+  xs = np.mgrid[binning[0]:binning[-1]:101j]
+  ystot = np.zeros_like(xs)
+
+  for i in range(len(mus)):
+    ys = norms[i] * gaussian(mus[i], sigmas[i], normalized=True)(xs)
+    ax.plot \
+      ( xs
+      , ys
+      , color=colors[i]
+      , linewidth=2
+      , linestyle='dotted'
+      , zorder=3
+      )
+
+    ystot = ystot + ys
+
+  ax.plot \
+    ( xs
+    , ystot
+    , color='black'
+    , linewidth=2
+    , linestyle='dotted'
+    , zorder=4
+    )
+
+  if xlabel:
+    ax.set_xlabel(xlabel)
+
+  if ylabel:
+    ax.set_ylabel(ylabel)
+
+  return fig
+
+
+
 def valid_plots(mus, cov, targets, labels, binranges, writer, epoch, outdir, prefix=""):
 
   # first pair everything up
