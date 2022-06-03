@@ -1,13 +1,13 @@
 { "globalnodes" : [ 64 , 64 , 64 , 64 ]
 , "localnodes" : [ 16 , 16 , 16 , 16 ]
 
-, "lr" : 1e-3
+, "lr" : 1e-4
 , "outdir" : "tb"
 , "device" : "cpu"
 , "patience" : 10
 
 , "batch_size" : 64
-, "epoch_size" : 64
+, "epoch_size" : 128
 , "number_epochs" : 99999
 , "grad_clip" : 1e-3
 
@@ -18,7 +18,7 @@
 , "bkg_sigma_range" : [ 4.0 , 20.0 ]
 
 , "sig_norm_range" : [ 0.0 , 500.0 ]
-, "bkg_norm_range" : [ 0.0 , 250.0 ]
+, "bkg_norm_range" : [ 0.0 , 200.0 ]
 
 , "n_bkgs" : 5
 

@@ -38,7 +38,7 @@ localnodes = config["localnodes"]
 localnodes = [ 1 ] + localnodes
 
 globalnodes = \
-    localnodes[-1:] \
+    [ localnodes[-1] + 1 ] \
   + globalnodes \
   + [ targlen + (targlen * (targlen+1) // 2) ]
 
@@ -93,6 +93,7 @@ def generate_data(mus, sigs, norms, ntimes=1):
   outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
   ns = torch.tensor(ns, dtype=torch.int)
   
+
   return VarLenSeq(torch.Tensor(outs).detach(), ns)
 
 
@@ -100,7 +101,7 @@ def avg(l):
   s = sum(l)
   return s / len(l)
 
-ntests = 10
+ntests = 25
 
 testsig_mu = avg(sig_mu_range) * np.ones(ntests)
 testsig_sigma = avg(sig_sigma_range) * np.ones(ntests)
@@ -163,6 +164,7 @@ testinputs = testsiginputs.cat(testbkginputs)
 testmus = np.concatenate([testsigmus, testbkgmus], axis=1)
 testsigmas = np.concatenate([testsigsigmas, testbkgsigmas], axis=1)
 testnorms = np.concatenate([testtargs, testbkgnorms], axis=1)
+mu , cov = utils.regress(localnet, globalnet, testinputs, 1)
 
 for i in range(ntests):
   fig = \
@@ -176,6 +178,8 @@ for i in range(ntests):
     , labels=["signal", "bkg1", "bkg2", "bkg3", "bkg4", "bkg5", "bkg6"]
     , xlabel="$x$"
     , ylabel="events / unit"
+    , text="$\\lambda^{sig}_{true} = %.1f$; $\\lambda^{sig}_{out} = %.1f \\pm %.1f$"
+        % (testtargs[i], mu[i], np.sqrt(cov[i,0].detach()))
     )
 
   fig.savefig(outfolder + "/distributions%d.pdf" % i)

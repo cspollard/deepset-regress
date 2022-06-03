@@ -20,11 +20,13 @@ def regress(localnet, globalnet, feats, outsize):
   # run the local networks in parallel
   tmp = localnet(feats.tensor)
 
-  # sum the outputs of the local networks
-  sums = VarLenSeq( tmp , feats.lengths ).sum()
+  # average the outputs of the local networks
+  avgs = VarLenSeq( tmp , feats.lengths ).mean1()
+
+  globalinputs = torch.cat([ avgs , torch.log((feats.lengths.unsqueeze(1) + 1.0) / 100.0) ], axis=1)
 
   # extract the mean and covariance of the regressed posterior
-  outs = globalnet(sums)
+  outs = globalnet(globalinputs)
   mus = torch.exp(outs[: , :outsize])
   rest = outs[:, outsize:]
   cov = uncholesky(uppertriangle(rest, outsize))

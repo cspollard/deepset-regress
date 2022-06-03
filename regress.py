@@ -163,7 +163,7 @@ testinputs = testsiginputs.cat(testbkginputs)
 localnodes = [ 1 ] + localnodes
 
 globalnodes = \
-    localnodes[-1:] \
+    [ localnodes[-1] + 1 ] \
   + globalnodes \
   + [ targlen + (targlen * (targlen+1) // 2) ]
 

@@ -63,7 +63,7 @@ def profile(bins, xs, ys, xlabel="", ylabel=""):
     return fig
 
 
-def plotGausses(binning, data, mus, sigmas, norms, colors, labels, xlabel="", ylabel=""):
+def plotGausses(binning, data, mus, sigmas, norms, colors, labels, xlabel="", ylabel="", text=""):
   fig = figure.Figure()
   ax = fig.add_subplot(111)
 
@@ -113,11 +113,16 @@ def plotGausses(binning, data, mus, sigmas, norms, colors, labels, xlabel="", yl
     , zorder=4
     )
 
+  ax.legend()
+
   if xlabel:
     ax.set_xlabel(xlabel)
 
   if ylabel:
     ax.set_ylabel(ylabel)
+
+  if text:
+    ax.set_title(text)
 
   return fig
 
