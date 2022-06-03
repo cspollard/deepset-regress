@@ -6,19 +6,19 @@
 , "device" : "cpu"
 , "patience" : 10
 
-, "batch_size" : 32
-, "epoch_size" : 512
+, "batch_size" : 64
+, "epoch_size" : 64
 , "number_epochs" : 99999
 , "grad_clip" : 1e-3
 
 , "sig_mu_range" : [ -10.0 , 10.0 ]
-, "sig_sigma_range" : [ 0.5 , 1.5 ]
+, "sig_sigma_range" : [ 1.0 , 3.0 ]
 
-, "bkg_mu_range" : [ -20.0 , 20.0 ]
+, "bkg_mu_range" : [ -10.0 , 10.0 ]
 , "bkg_sigma_range" : [ 4.0 , 20.0 ]
 
-, "sig_norm_range" : [ 0.0 , 50.0 ]
-, "bkg_norm_range" : [ 0.0 , 50.0 ]
+, "sig_norm_range" : [ 0.0 , 500.0 ]
+, "bkg_norm_range" : [ 0.0 , 250.0 ]
 
 , "n_bkgs" : 5
 
