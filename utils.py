@@ -82,7 +82,7 @@ def logGaussLoss(targets, mus, cov):
 def loss(targets, alphas, mus, covs):
   tot = torch.zeros(targets.size()[0])
   for i in range(alphas.size()[1]):
-    tot = tot + alphas[:, i] * torch.exp(logGaussLoss(targets, mus[i], covs[i]) / 1e8)
+    tot = tot + alphas[:, i] * torch.exp(logGaussLoss(targets, mus[i], covs[i]))
 
   return torch.log(tot)
   
