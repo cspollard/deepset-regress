@@ -21,5 +21,6 @@
 , "bkg_norm_range" : [ 0.0 , 200.0 ]
 
 , "n_bkgs" : 5
+, "n_gaussians" : 3
 
 }

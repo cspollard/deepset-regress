@@ -13,25 +13,44 @@ def intersperse(i, xs):
   yield xs[-1]
 
 
+def tonumpy(t):
+  return t.detach().numpy()
+
 # regress given a local network and a global network and a set of features.
 # the outsize is the dimensionality of the means and covariances.
 # (we assume globalnet has the correct number of outputs to accommodate this!)
-def regress(localnet, globalnet, feats, outsize):
+def regress(localnet, globalnet, feats, ndims, ngauss):
   # run the local networks in parallel
   tmp = localnet(feats.tensor)
 
-  # average the outputs of the local networks
+  # ~average the outputs of the local networks
   avgs = VarLenSeq( tmp , feats.lengths ).mean1()
 
   globalinputs = torch.cat([ avgs , torch.log((feats.lengths.unsqueeze(1) + 1.0) / 100.0) ], axis=1)
 
-  # extract the mean and covariance of the regressed posterior
   outs = globalnet(globalinputs)
-  mus = torch.exp(outs[: , :outsize])
-  rest = outs[:, outsize:]
-  cov = uncholesky(uppertriangle(rest, outsize))
 
-  return (mus, cov)
+  alphas = torch.nn.functional.softmax(outs[: , :ngauss])
+
+  mus = []
+  covs = []
+  idx = ndims
+  # the number of elements in the pre-cholskey covariance matrix
+  ncovs = ndims * (ndims+1) // 2
+
+  for _ in range(ngauss):
+    mu = outs[: , idx:idx+ndims]
+    idx += ndims
+
+    rest = outs[:, idx:idx+ncovs]
+    idx += ncovs
+
+    cov = uncholesky(uppertriangle(rest, ndims))
+
+    mus.append(mu)
+    covs.append(cov)
+
+  return (alphas, mus, covs)
 
 
 # returns the "distance" component of the gaussian loss function
@@ -48,7 +67,7 @@ def distloss(targs, mus, cov):
   return res
 
 
-def loss(targets, mus, cov):
+def logGaussLoss(targets, mus, cov):
   # the "distance" component of the gaussian loss
   d = distloss(targets, mus, cov)
 
@@ -57,8 +76,15 @@ def loss(targets, mus, cov):
   # the gaussian loss.
   logdet = torch.sum(torch.log(eigs), axis=1)
 
-  # we need to keep the means, covariances, and the actual loss.
   return logdet + d
+
+
+def loss(targets, alphas, mus, covs):
+  tot = torch.zeros(targets.size()[0])
+  for i in range(alphas.size()[1]):
+    tot = tot + alphas[:, i] * torch.exp(logGaussLoss(targets, mus[i], covs[i]) / 1e8)
+
+  return torch.log(tot)
   
 
 # convert a 1D array of matrix elements into an upper triangular matrix
@@ -77,7 +103,7 @@ def uppertriangle(xs, n):
     return ret
 
 
-# I think this is the inverse of uppertriangle
+# I think (?) this is the inverse of uppertriangle
 def fromuppertriangle(xs, n):
   if n == 1:
     return xs.unsqueeze(dim=2)

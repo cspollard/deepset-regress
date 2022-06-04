@@ -45,6 +45,8 @@ bkg_mu_range = config["bkg_mu_range"]
 bkg_sigma_range = config["bkg_sigma_range"]
 sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
+n_gaussians = config["n_gaussians"]
+
 n_bkgs = config["n_bkgs"]
 
 
@@ -165,7 +167,7 @@ localnodes = [ 1 ] + localnodes
 globalnodes = \
     [ localnodes[-1] + 1 ] \
   + globalnodes \
-  + [ targlen + (targlen * (targlen+1) // 2) ]
+  + [ (1 + targlen + (targlen * (targlen+1) // 2)) * n_gaussians ]
 
 act = torch.nn.LeakyReLU(0.01, inplace=True)
 
@@ -192,7 +194,6 @@ for net in nets:
 os.mkdir(runname + ".plots")
 
 sumloss = 0
-sumdist = 0
 for epoch in range(number_epochs):
   gc.collect()
   print("garbage:")
@@ -213,25 +214,25 @@ for epoch in range(number_epochs):
 
     writer.add_scalar("learningrate", optim.param_groups[0]['lr'], global_step=epoch)
     writer.add_scalar("avgloss", sumloss / epoch_size, global_step=epoch)
-    writer.add_scalar("avgdist", sumdist / epoch_size, global_step=epoch)
     sched.step(sumloss / epoch_size)
 
 
-  mus , cov = utils.regress(localnet, globalnet, testinputs, 1)
+  alphas, mus , covs = utils.regress(localnet, globalnet, testinputs, 1, n_gaussians)
 
   labels = [ "signalrate" ]
   binranges = [ sig_norm_range ]
 
-  plotutils.valid_plots \
-    ( mus.detach().numpy()
-    , cov.detach().numpy()
-    , testtargs
-    , labels
-    , binranges
-    , writer
-    , epoch
-    , None
-    )
+  # plotutils.valid_plots \
+  #   ( utils.tonumpy(alphas)
+  #   , map(utils.tonumpy, mus)
+  #   , map(utils.tonumpy, covs)
+  #   , testtargs
+  #   , labels
+  #   , binranges
+  #   , writer
+  #   , epoch
+  #   , None
+  #   )
 
   print("starting epoch %03d" % epoch)
 
@@ -239,7 +240,6 @@ for epoch in range(number_epochs):
     net.training = True
 
   sumloss = 0
-  sumdist = 0
   for batch in range(epoch_size):
     localnet.zero_grad()
     globalnet.zero_grad()
@@ -316,11 +316,11 @@ for epoch in range(number_epochs):
 
     inputs = siginputs.cat(bkginputs)
 
-    mus , cov = utils.regress(localnet, globalnet, inputs, 1)
+    alphas, mus , cov = utils.regress(localnet, globalnet, inputs, 1, n_gaussians)
 
     targs = torch.Tensor(targs).detach()
 
-    l = utils.loss(targs, mus, cov)
+    l = utils.loss(targs, alphas, mus, cov)
 
     loss = l.mean()
 
@@ -330,7 +330,6 @@ for epoch in range(number_epochs):
       torch.nn.utils.clip_grad_norm_(allparams, grad_clip)
 
     sumloss += loss.detach().item()
-    sumdist += torch.sqrt((mus[:,0] - targs[:,0])**2).mean().item()
 
     optim.step()
 
