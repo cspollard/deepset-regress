@@ -46,6 +46,7 @@ bkg_sigma_range = config["bkg_sigma_range"]
 sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
 n_bkgs = config["n_bkgs"]
+max_size = config["max_size"]
 
 
 from time import gmtime, strftime
@@ -61,7 +62,7 @@ targlen = 1
 
 rng = np.random.default_rng()
 
-def generate_data(mus, sigs, norms, ntimes=1):
+def generate_data(mus, sigs, norms, max_size):
   batches = norms.size
   ns = rng.poisson(norms)
   max_size = np.max(ns)
@@ -72,7 +73,7 @@ def generate_data(mus, sigs, norms, ntimes=1):
   outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
   ns = torch.tensor(ns, dtype=torch.int)
   
-  return VarLenSeq(torch.Tensor(outs).detach(), ns)
+  return VarLenSeq(torch.Tensor(outs).detach(), ns, max_size)
 
 
 def avg(l):
@@ -109,7 +110,7 @@ testsigsigmas = \
   , size=ntests
   )
 
-testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0])
+testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0], -1)
 
 testbkgnorms = \
   rng.uniform \
@@ -132,7 +133,7 @@ testbkgsigmas = \
   , size=ntests
   )
 
-testbkginputs = generate_data(testbkgmus, testbkgsigmas, testbkgnorms)
+testbkginputs = generate_data(testbkgmus, testbkgsigmas, testbkgnorms, -1)
 for i in (range(n_bkgs-1)):
   testbkgnorms = \
     rng.uniform \
@@ -155,7 +156,7 @@ for i in (range(n_bkgs-1)):
     , size=ntests
     )
 
-  testbkginputs = testbkginputs.cat(generate_data(testbkgmus, testbkgsigmas, testbkgnorms))
+  testbkginputs = testbkginputs.cat(generate_data(testbkgmus, testbkgsigmas, testbkgnorms, -1))
 
 
 testinputs = testsiginputs.cat(testbkginputs)
@@ -265,7 +266,7 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
-    siginputs = generate_data(sigmus, sigsigmas, targs[:,0])
+    siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
 
     bkgnorms = \
       rng.uniform \
@@ -288,7 +289,8 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
-    bkginputs = generate_data(bkgmus, bkgsigmas, bkgnorms)
+    bkginputs = generate_data(bkgmus, bkgsigmas, bkgnorms, max_size)
+
     for i in (range(n_bkgs-1)):
       bkgnorms = \
         rng.uniform \
@@ -311,7 +313,7 @@ for epoch in range(number_epochs):
         , size=batch_size
         )
 
-      bkginputs = bkginputs.cat(generate_data(bkgmus, bkgsigmas, bkgnorms))
+      bkginputs = bkginputs.cat(generate_data(bkgmus, bkgsigmas, bkgnorms, max_size))
 
 
     inputs = siginputs.cat(bkginputs)

@@ -1,7 +1,7 @@
 { "globalnodes" : [ 64 , 64 , 64 , 64 ]
 , "localnodes" : [ 16 , 16 , 16 , 16 ]
 
-, "lr" : 1e-5
+, "lr" : 1e-4
 , "outdir" : "tb"
 , "device" : "cpu"
 , "patience" : 50
@@ -18,8 +18,9 @@
 , "bkg_sigma_range" : [ 4.0 , 20.0 ]
 
 , "sig_norm_range" : [ 0.0 , 500.0 ]
-, "bkg_norm_range" : [ 0.0 , 500.0 ]
+, "bkg_norm_range" : [ 0.0 , 100.0 ]
 
 , "n_bkgs" : 5
+, "max_size" : 50
 
 }

@@ -18,10 +18,11 @@ def intersperse(i, xs):
 # (we assume globalnet has the correct number of outputs to accommodate this!)
 def regress(localnet, globalnet, feats, outsize):
   # run the local networks in parallel
-  tmp = localnet(feats.tensor)
+  ms = feats.max_size
+  tmp = localnet(feats.truncated())
 
   # average the outputs of the local networks
-  avgs = VarLenSeq( tmp , feats.lengths ).mean1()
+  avgs = VarLenSeq( tmp , feats.lengths, ms ).mean1()
 
   globalinputs = torch.cat([ avgs , torch.log((feats.lengths.unsqueeze(1) + 1.0) / 100.0) ], axis=1)
 
