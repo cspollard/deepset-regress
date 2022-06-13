@@ -4,23 +4,23 @@
 , "lr" : 1e-4
 , "outdir" : "tb"
 , "device" : "cpu"
-, "patience" : 50
+, "patience" : 15
 
 , "batch_size" : 64
-, "epoch_size" : 128
+, "epoch_size" : 512
 , "number_epochs" : 99999
 , "grad_clip" : 1e-3
 
-, "sig_mu_range" : [ -10.0 , 10.0 ]
-, "sig_sigma_range" : [ 1.0 , 3.0 ]
+, "sig_mu_range" : [ 4.0 , 6.0 ]
+, "sig_sigma_range" : [ 0.5 , 1.5 ]
 
-, "bkg_mu_range" : [ -10.0 , 10.0 ]
-, "bkg_sigma_range" : [ 4.0 , 20.0 ]
+, "bkg_mu_range" : [ 10 , 15 ]
+, "bkg_sigma_range" : [ 4.0 , 6 ]
 
-, "sig_norm_range" : [ 0.0 , 500.0 ]
+, "sig_norm_range" : [ 0.0 , 100.0 ]
 , "bkg_norm_range" : [ 0.0 , 100.0 ]
 
-, "n_bkgs" : 5
-, "max_size" : 50
+, "n_bkgs" : 1
+, "max_size" : 1000
 
 }

@@ -137,21 +137,21 @@ testbkgnorms = \
   rng.uniform \
   ( low=bkg_norm_range[0]
   , high=bkg_norm_range[1]
-  , size=(ntests, 5)
+  , size=(ntests, n_bkgs)
   )
 
 testbkgmus = \
   rng.uniform \
   ( low=bkg_mu_range[0]
   , high=bkg_mu_range[1]
-  , size=(ntests, 5)
+  , size=(ntests, n_bkgs)
   )
 
 testbkgsigmas = \
   rng.uniform \
   ( low=bkg_sigma_range[0]
   , high=bkg_sigma_range[1]
-  , size=(ntests, 5)
+  , size=(ntests, n_bkgs)
   )
 
 testbkginputs = generate_data(testbkgmus[:,0], testbkgsigmas[:,0], testbkgnorms[:,0])
@@ -166,10 +166,11 @@ testsigmas = np.concatenate([testsigsigmas, testbkgsigmas], axis=1)
 testnorms = np.concatenate([testtargs, testbkgnorms], axis=1)
 mu , cov = utils.regress(localnet, globalnet, testinputs, 1)
 
+
 for i in range(ntests):
   fig = \
     plotutils.plotGausses \
-    ( np.mgrid[-30:30:31j]
+    ( np.mgrid[-10:30:41j]
     , testinputs.tensor[i][:,:testinputs.lengths[i]]
     , testmus[i]
     , testsigmas[i]
@@ -183,3 +184,20 @@ for i in range(ntests):
     )
 
   fig.savefig(outfolder + "/distributions%d.pdf" % i)
+
+
+import pickle
+for i in range(5):
+  with open("toy_%d.pkl" % i, "rb") as f:
+    toy = pickle.load(f)
+
+  toy = torch.Tensor(np.array(toy)).unsqueeze(0).unsqueeze(0)
+  lengths = torch.tensor(np.array([toy.size()[2]], dtype=np.int32), dtype=torch.int32)
+  toy = VarLenSeq(toy, lengths)
+
+  mu , cov = utils.regress(localnet, globalnet, toy, 1)
+
+  print("toy %d" % i)
+  print("mu =", mu[0][0].item())
+  print("std =", torch.sqrt(cov[0][0][0]).item())
+  print()
