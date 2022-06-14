@@ -10,6 +10,7 @@ import utils
 import numpy as np
 import os
 from VarLenSeq import VarLenSeq
+import pickle
 
 
 print("torch version:", torch.__version__)
@@ -168,10 +169,11 @@ mu , cov = utils.regress(localnet, globalnet, testinputs, 1)
 
 
 for i in range(ntests):
+  ins = testinputs.tensor[i][:,:testinputs.lengths[i]]
   fig = \
     plotutils.plotGausses \
     ( np.mgrid[-10:30:41j]
-    , testinputs.tensor[i][:,:testinputs.lengths[i]]
+    , ins
     , testmus[i]
     , testsigmas[i]
     , testnorms[i]
@@ -185,8 +187,16 @@ for i in range(ntests):
 
   fig.savefig(outfolder + "/distributions%d.pdf" % i)
 
+  with open(outfolder + "/chris_toy_%02d.pkl" % i, "wb") as f:
+    pickle.dump(ins.tolist(), f)
 
-import pickle
+  print("toy %02d" % i)
+  print("mu =", mu[i][0].item())
+  print("std =", torch.sqrt(cov[i][0][0]).item())
+  print()
+
+
+
 for i in range(5):
   with open("toy_%d.pkl" % i, "rb") as f:
     toy = pickle.load(f)

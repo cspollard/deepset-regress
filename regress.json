@@ -4,7 +4,8 @@
 , "lr" : 1e-4
 , "outdir" : "tb"
 , "device" : "cpu"
-, "patience" : 15
+, "patience" : 32
+, "lrfactor" : 0.5
 
 , "batch_size" : 64
 , "epoch_size" : 512
@@ -21,6 +22,6 @@
 , "bkg_norm_range" : [ 0.0 , 100.0 ]
 
 , "n_bkgs" : 1
-, "max_size" : 1000
+, "max_size" : 32
 
 }
