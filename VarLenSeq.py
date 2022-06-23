@@ -8,6 +8,7 @@ class VarLenSeq:
     self.lengths = lengths
     self.max_size = max_size
 
+
   def cat(self, vls):
     newlengths = vls.lengths + self.lengths
     maxlen = torch.max(newlengths)
@@ -45,6 +46,7 @@ class VarLenSeq:
       s[i] = s[i] / (l + 1)
 
     return s
+
 
   def truncated(self):
     newshape = list(self.tensor.size())

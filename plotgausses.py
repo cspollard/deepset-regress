@@ -172,7 +172,7 @@ for i in range(ntests):
   ins = testinputs.tensor[i][:,:testinputs.lengths[i]]
   fig = \
     plotutils.plotGausses \
-    ( np.mgrid[-10:30:41j]
+    ( np.mgrid[-30:30:41j]
     , ins
     , testmus[i]
     , testsigmas[i]
@@ -197,17 +197,17 @@ for i in range(ntests):
 
 
 
-for i in range(5):
-  with open("toy_%d.pkl" % i, "rb") as f:
-    toy = pickle.load(f)
+# for i in range(5):
+#   with open("toy_%d.pkl" % i, "rb") as f:
+#     toy = pickle.load(f)
 
-  toy = torch.Tensor(np.array(toy)).unsqueeze(0).unsqueeze(0)
-  lengths = torch.tensor(np.array([toy.size()[2]], dtype=np.int32), dtype=torch.int32)
-  toy = VarLenSeq(toy, lengths)
+#   toy = torch.Tensor(np.array(toy)).unsqueeze(0).unsqueeze(0)
+#   lengths = torch.tensor(np.array([toy.size()[2]], dtype=np.int32), dtype=torch.int32)
+#   toy = VarLenSeq(toy, lengths)
 
-  mu , cov = utils.regress(localnet, globalnet, toy, 1)
+#   mu , cov = utils.regress(localnet, globalnet, toy, 1)
 
-  print("toy %d" % i)
-  print("mu =", mu[0][0].item())
-  print("std =", torch.sqrt(cov[0][0][0]).item())
-  print()
+#   print("toy %d" % i)
+#   print("mu =", mu[0][0].item())
+#   print("std =", torch.sqrt(cov[0][0][0]).item())
+#   print()

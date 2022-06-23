@@ -9,7 +9,6 @@ import json
 import plotutils
 import utils
 import numpy as np
-import gc
 from VarLenSeq import VarLenSeq
 
 
@@ -196,12 +195,12 @@ os.mkdir(runname + ".plots")
 sumloss = 0
 sumdist = 0
 for epoch in range(number_epochs):
-  gc.collect()
-  print("garbage:")
-  print(gc.garbage)
-
+  
   torch.save(localnet.state_dict(), runname + "/localnet.pth")
   torch.save(globalnet.state_dict(), runname + "/globalnet.pth")
+
+  torch.save(localnet.state_dict(), runname + "/localnet.%03d.pth" % epoch)
+  torch.save(globalnet.state_dict(), runname + "/globalnet.%03d.pth" % epoch)
 
   for net in nets:
     net.training = False
@@ -209,7 +208,6 @@ for epoch in range(number_epochs):
   localnet.zero_grad()
   globalnet.zero_grad()
 
-  print("plotting")
 
   if epoch > 0:
 
@@ -219,21 +217,23 @@ for epoch in range(number_epochs):
     sched.step(sumloss / epoch_size)
 
 
-  mus , cov = utils.regress(localnet, globalnet, testinputs, 1)
+  # mus , cov = utils.regress(localnet, globalnet, testinputs, 1)
+  # mus = mus.detach()
+  # cov = cov.detach()
 
-  labels = [ "signalrate" ]
-  binranges = [ sig_norm_range ]
+  # labels = [ "signalrate" ]
+  # binranges = [ sig_norm_range ]
 
-  plotutils.valid_plots \
-    ( mus.detach().numpy()
-    , cov.detach().numpy()
-    , testtargs
-    , labels
-    , binranges
-    , writer
-    , epoch
-    , None
-    )
+  # plotutils.valid_plots \
+  #   ( mus.numpy()
+  #   , cov.numpy()
+  #   , testtargs
+  #   , labels
+  #   , binranges
+  #   , writer
+  #   , epoch
+  #   , None
+  #   )
 
   print("starting epoch %03d" % epoch)
 
@@ -332,8 +332,8 @@ for epoch in range(number_epochs):
     if grad_clip > 0:
       torch.nn.utils.clip_grad_norm_(allparams, grad_clip)
 
-    sumloss += loss.detach().item()
-    sumdist += torch.sqrt((mus[:,0] - targs[:,0])**2).mean().item()
-
     optim.step()
+
+    sumloss += loss.detach().item()
+    sumdist += torch.sqrt((mus[:,0] - targs[:,0])**2).mean().detach().item()
 
