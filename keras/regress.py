@@ -6,7 +6,7 @@ from time import time
 from sys import argv
 import shutil
 import json
-import plotutils
+# import plotutils
 import utils
 import numpy
 
