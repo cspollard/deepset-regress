@@ -46,6 +46,7 @@ sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
 n_bkgs = config["n_bkgs"]
 max_size = config["max_size"]
+mask_value = config["mask_value"]
 
 
 from time import gmtime, strftime
@@ -64,15 +65,16 @@ rng = np.random.default_rng()
 def generate_data(mus, sigs, norms, max_size):
   batches = norms.size
   ns = rng.poisson(norms)
-  max_size = np.max(ns)
 
   mus = np.broadcast_to(mus, (max_size, 1, batches)).T
   sigs = np.broadcast_to(sigs, (max_size, 1, batches)).T
 
   outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
-  ns = torch.tensor(ns, dtype=torch.int)
+
+  for i in range(outs.shape[0]):
+    outs[i,ns[i]:] = mask_value
   
-  return VarLenSeq(torch.Tensor(outs).detach(), ns, max_size)
+  return outs
 
 
 def avg(l):
