@@ -16,23 +16,21 @@ def intersperse(i, xs):
 # regress given a local network and a global network and a set of features.
 # the outsize is the dimensionality of the means and covariances.
 # (we assume globalnet has the correct number of outputs to accommodate this!)
-def regress(localnet, globalnet, feats, outsize):
+def regress(localnet, globalnet, feats):
   # run the local networks in parallel
-  ms = feats.max_size
-  tmp = localnet(feats.truncated())
+  tmp = localnet(feats.tensor)
 
   # average the outputs of the local networks
-  avgs = VarLenSeq( tmp , feats.lengths, ms ).mean1()
+  avgs = VarLenSeq( tmp , feats.lengths ).mean1()
 
   globalinputs = torch.cat([ avgs , torch.log((feats.lengths.unsqueeze(1) + 1.0) / 100.0) ], axis=1)
 
   # extract the mean and covariance of the regressed posterior
   outs = globalnet(globalinputs)
-  mus = torch.exp(outs[: , :outsize])
-  rest = outs[:, outsize:]
-  cov = uncholesky(uppertriangle(rest, outsize))
+  mus = torch.exp(outs[: , :1])
+  sigmas = outs[: , 1:].unsqueeze(1)
 
-  return (mus, cov)
+  return (mus, sigmas)
 
 
 # returns the "distance" component of the gaussian loss function

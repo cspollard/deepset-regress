@@ -10,6 +10,9 @@ import plotutils
 import utils
 import numpy as np
 from VarLenSeq import VarLenSeq
+import os, psutil
+import gc
+
 
 
 print("torch version:", torch.__version__)
@@ -62,7 +65,7 @@ targlen = 1
 
 rng = np.random.default_rng()
 
-def generate_data(mus, sigs, norms, max_size):
+def generate_data(mus, sigs, norms):
   batches = norms.size
   ns = rng.poisson(norms)
   max_size = np.max(ns)
@@ -73,7 +76,7 @@ def generate_data(mus, sigs, norms, max_size):
   outs = mus + sigs * rng.standard_normal(size=(batches, 1, max_size))
   ns = torch.tensor(ns, dtype=torch.int)
   
-  return VarLenSeq(torch.Tensor(outs).detach(), ns, max_size)
+  return VarLenSeq(torch.Tensor(outs).detach(), ns)
 
 
 def avg(l):
@@ -110,7 +113,7 @@ testsigsigmas = \
   , size=ntests
   )
 
-testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0], -1)
+testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0])
 
 testbkgnorms = \
   rng.uniform \
@@ -133,7 +136,7 @@ testbkgsigmas = \
   , size=ntests
   )
 
-testbkginputs = generate_data(testbkgmus, testbkgsigmas, testbkgnorms, -1)
+testbkginputs = generate_data(testbkgmus, testbkgsigmas, testbkgnorms)
 for i in (range(n_bkgs-1)):
   testbkgnorms = \
     rng.uniform \
@@ -156,7 +159,7 @@ for i in (range(n_bkgs-1)):
     , size=ntests
     )
 
-  testbkginputs = testbkginputs.cat(generate_data(testbkgmus, testbkgsigmas, testbkgnorms, -1))
+  testbkginputs = testbkginputs.cat(generate_data(testbkgmus, testbkgsigmas, testbkgnorms))
 
 
 testinputs = testsiginputs.cat(testbkginputs)
@@ -187,6 +190,13 @@ allparams = [ p for net in nets for p in net.parameters() ]
 optim = torch.optim.Adam(allparams, lr = lr)
 sched = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, factor=lrfactor, patience=patience)
 
+# if resuming:
+if len(argv) > 2:
+  localnet.load_state_dict(torch.load(argv[2]))
+  globalnet.load_state_dict(torch.load(argv[3]))
+  optim.load_state_dict(torch.load(argv[4]))
+  sched.load_state_dict(torch.load(argv[5]))
+
 for net in nets:
   net.to(device)
 
@@ -195,6 +205,9 @@ os.mkdir(runname + ".plots")
 sumloss = 0
 sumdist = 0
 for epoch in range(number_epochs):
+
+  gc.collect()
+  print(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
   
   torch.save(localnet.state_dict(), runname + "/localnet.pth")
   torch.save(globalnet.state_dict(), runname + "/globalnet.pth")
@@ -202,8 +215,11 @@ for epoch in range(number_epochs):
   torch.save(localnet.state_dict(), runname + "/localnet.%03d.pth" % epoch)
   torch.save(globalnet.state_dict(), runname + "/globalnet.%03d.pth" % epoch)
 
+  torch.save(optim.state_dict(), runname + "/optim.pth")
+  torch.save(sched.state_dict(), runname + "/sched.pth")
+
   for net in nets:
-    net.training = False
+    net.train(False)
 
   localnet.zero_grad()
   globalnet.zero_grad()
@@ -217,28 +233,28 @@ for epoch in range(number_epochs):
     sched.step(sumloss / epoch_size)
 
 
-  # mus , cov = utils.regress(localnet, globalnet, testinputs, 1)
-  # mus = mus.detach()
-  # cov = cov.detach()
+  mus , cov = utils.regress(localnet, globalnet, testinputs)
+  mus = mus.detach()
+  cov = cov.detach()
 
-  # labels = [ "signalrate" ]
-  # binranges = [ sig_norm_range ]
+  labels = [ "signalrate" ]
+  binranges = [ sig_norm_range ]
 
-  # plotutils.valid_plots \
-  #   ( mus.numpy()
-  #   , cov.numpy()
-  #   , testtargs
-  #   , labels
-  #   , binranges
-  #   , writer
-  #   , epoch
-  #   , None
-  #   )
+  plotutils.valid_plots \
+    ( mus.numpy()
+    , cov.numpy()
+    , testtargs
+    , labels
+    , binranges
+    , writer
+    , epoch
+    , None
+    )
 
   print("starting epoch %03d" % epoch)
 
   for net in nets:
-    net.training = True
+    net.train(True)
 
   sumloss = 0
   sumdist = 0
@@ -267,7 +283,7 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
-    siginputs = generate_data(sigmus, sigsigmas, targs[:,0], max_size)
+    siginputs = generate_data(sigmus, sigsigmas, targs[:,0])
 
     bkgnorms = \
       rng.uniform \
@@ -290,7 +306,7 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
-    bkginputs = generate_data(bkgmus, bkgsigmas, bkgnorms, max_size)
+    bkginputs = generate_data(bkgmus, bkgsigmas, bkgnorms)
 
     for i in (range(n_bkgs-1)):
       bkgnorms = \
@@ -314,12 +330,12 @@ for epoch in range(number_epochs):
         , size=batch_size
         )
 
-      bkginputs = bkginputs.cat(generate_data(bkgmus, bkgsigmas, bkgnorms, max_size))
+      bkginputs = bkginputs.cat(generate_data(bkgmus, bkgsigmas, bkgnorms))
 
 
     inputs = siginputs.cat(bkginputs)
 
-    mus , cov = utils.regress(localnet, globalnet, inputs, 1)
+    mus , cov = utils.regress(localnet, globalnet, inputs)
 
     targs = torch.Tensor(targs).detach()
 
@@ -337,3 +353,4 @@ for epoch in range(number_epochs):
     sumloss += loss.detach().item()
     sumdist += torch.sqrt((mus[:,0] - targs[:,0])**2).mean().detach().item()
 
+  del loss, mus, cov, inputs, targs
