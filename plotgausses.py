@@ -165,7 +165,7 @@ testinputs = testsiginputs.cat(testbkginputs)
 testmus = np.concatenate([testsigmus, testbkgmus], axis=1)
 testsigmas = np.concatenate([testsigsigmas, testbkgsigmas], axis=1)
 testnorms = np.concatenate([testtargs, testbkgnorms], axis=1)
-mu , cov = utils.regress(localnet, globalnet, testinputs, 1)
+mu , cov = utils.regress(localnet, globalnet, testinputs)
 
 
 for i in range(ntests):
