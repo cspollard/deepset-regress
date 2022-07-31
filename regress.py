@@ -49,7 +49,7 @@ bkg_sigma_range = config["bkg_sigma_range"]
 sig_norm_range = config["sig_norm_range"]
 bkg_norm_range = config["bkg_norm_range"]
 n_bkgs = config["n_bkgs"]
-max_size = config["max_size"]
+truncation = config["truncation"]
 
 
 from time import gmtime, strftime
@@ -167,16 +167,16 @@ testinputs = testsiginputs.cat(testbkginputs)
 localnodes = [ 1 ] + localnodes
 
 globalnodes = \
-    [ localnodes[-1] + 1 ] \
+    [ localnodes[-1] ] \
   + globalnodes \
   + [ targlen + (targlen * (targlen+1) // 2) ]
 
 act = torch.nn.LeakyReLU(0.01, inplace=True)
 
 localnet = \
-  [ torch.nn.Conv1d(localnodes[i], localnodes[i+1], 1) for i in range(len(localnodes) - 1) ]
+    [ torch.nn.Conv1d(localnodes[i], localnodes[i+1], 1) for i in range(len(localnodes) - 1) ]
   
-localnet = torch.nn.Sequential(*(utils.intersperse(act, localnet)))
+localnet = torch.nn.Sequential(*(utils.intersperse(act, localnet)), torch.nn.Softmax(dim=1))
 
 globalnet = \
   [ torch.nn.Linear(globalnodes[i], globalnodes[i+1]) for i in range(len(globalnodes) - 1) ]
@@ -233,7 +233,7 @@ for epoch in range(number_epochs):
     sched.step(sumloss / epoch_size)
 
 
-  mus , cov = utils.regress(localnet, globalnet, testinputs)
+  mus , cov = utils.regress(localnet, globalnet, testinputs, -1)
   mus = mus.detach()
   cov = cov.detach()
 
@@ -335,7 +335,7 @@ for epoch in range(number_epochs):
 
     inputs = siginputs.cat(bkginputs)
 
-    mus , cov = utils.regress(localnet, globalnet, inputs)
+    mus , cov = utils.regress(localnet, globalnet, inputs, truncation)
 
     targs = torch.Tensor(targs).detach()
 

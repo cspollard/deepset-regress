@@ -23,20 +23,20 @@ class VarLenSeq:
     return VarLenSeq(newtensor, newlengths)
 
 
-  def sum(self):
+  def sum(self, truncated=-1):
     s = torch.zeros(self.tensor.size()[:-1])
-    for i in range(self.lengths.size()[0]):
-      l = self.lengths[i]
-      s[i] = torch.sum(self.tensor[ i , : , :l ], axis=1)
+
+    for batch in range(self.lengths.size()[0]):
+      l = self.lengths[batch]
+      if 0 < truncated and truncated < l:
+        shuffled = self.tensor[batch].T[torch.randperm(l)].T
+
+        truncked = torch.sum(shuffled[ : , :truncated ], axis=1)
+        untruncked = torch.sum(shuffled[ : , truncated: ], axis=1).detach()
+
+        s[batch] = truncked + untruncked
+
+      else:
+        s[batch] = torch.sum(self.tensor[ batch , : , :l ], axis=1)
 
     return s
-
-
-  def mean1(self):
-    s = self.sum()
-    for i in range(self.lengths.size()[0]):
-      l = self.lengths[i]
-      s[i] = s[i] / (l + 1)
-
-    return s
-
