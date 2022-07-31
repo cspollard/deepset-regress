@@ -261,7 +261,7 @@ for epoch in range(number_epochs):
       rng.uniform \
       ( low=sig_norm_range[0]
       , high=sig_norm_range[1]
-      , size=(batch_size, 1)
+      , size=batch_size
       )
 
     sigmus = \
@@ -278,7 +278,7 @@ for epoch in range(number_epochs):
       , size=batch_size
       )
 
-    siginputs = generate_data(sigmus, sigsigmas, targs[:,0])
+    siginputs = generate_data(sigmus, sigsigmas, targs)
 
     bkgnorms = \
       rng.uniform \

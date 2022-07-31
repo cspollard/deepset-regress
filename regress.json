@@ -1,14 +1,14 @@
-{ "globalnodes" : [ 16 , 16 , 16 , 16 , 16 , 16 ]
-, "localnodes" : [ 16 , 16 , 16 , 16 ]
+{ "globalnodes" : [ 64 , 64 , 64 ]
+, "localnodes" : [ 64 , 64 , 64 ]
 
 , "lr" : 1e-4
-, "patience" : 32
+, "patience" : 16
 , "lrfactor" : 0.5
 , "outdir" : "tb"
 , "device" : "cpu"
 
 , "batch_size" : 64
-, "epoch_size" : 500
+, "epoch_size" : 100
 , "number_epochs" : 99999
 , "grad_clip" : 1e-3
 
@@ -22,6 +22,6 @@
 , "bkg_norm_range" : [ 0.0 , 100.0 ]
 , "n_bkgs" : 1
 
-, "truncation" : 999
+, "truncation" : 32
 
 }

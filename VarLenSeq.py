@@ -28,6 +28,7 @@ class VarLenSeq:
 
     for batch in range(self.lengths.size()[0]):
       l = self.lengths[batch]
+
       if 0 < truncated and truncated < l:
         shuffled = self.tensor[batch].T[torch.randperm(l)].T
 
