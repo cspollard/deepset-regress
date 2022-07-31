@@ -61,8 +61,6 @@ runname = os.path.join(outdir, time_suffix)
 shutil.copyfile(argv[1], outdir + "/" + time_suffix + ".json")
 writer = SummaryWriter(runname)
 
-targlen = 1
-
 rng = np.random.default_rng()
 
 def generate_data(mus, sigs, norms):
@@ -96,7 +94,7 @@ testtargs = \
   rng.uniform \
   ( low=sig_norm_range[0]
   , high=sig_norm_range[1]
-  , size=(ntests, 1)
+  , size=ntests
   )
 
 testsigmus = \
@@ -113,7 +111,7 @@ testsigsigmas = \
   , size=ntests
   )
 
-testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs[:,0])
+testsiginputs = generate_data(testsigmus, testsigsigmas, testtargs)
 
 testbkgnorms = \
   rng.uniform \
@@ -169,13 +167,13 @@ localnodes = [ 1 ] + localnodes
 globalnodes = \
     [ localnodes[-1] ] \
   + globalnodes \
-  + [ targlen + (targlen * (targlen+1) // 2) ]
+  + [ 2 ]
 
-act = torch.nn.LeakyReLU(0.01, inplace=True)
+act = torch.nn.LeakyReLU(0.02, inplace=True)
 
 localnet = \
     [ torch.nn.Conv1d(localnodes[i], localnodes[i+1], 1) for i in range(len(localnodes) - 1) ]
-  
+
 localnet = torch.nn.Sequential(*(utils.intersperse(act, localnet)), torch.nn.Softmax(dim=1))
 
 globalnet = \
@@ -233,19 +231,16 @@ for epoch in range(number_epochs):
     sched.step(sumloss / epoch_size)
 
 
-  mus , cov = utils.regress(localnet, globalnet, testinputs, -1)
+  mus , logsigmas = utils.regress(localnet, globalnet, testinputs, truncation)
   mus = mus.detach()
-  cov = cov.detach()
-
-  labels = [ "signalrate" ]
-  binranges = [ sig_norm_range ]
+  logsigmas = logsigmas.detach()
 
   plotutils.valid_plots \
     ( mus.numpy()
-    , cov.numpy()
+    , logsigmas.numpy()
     , testtargs
-    , labels
-    , binranges
+    , "signalrate"
+    , sig_norm_range
     , writer
     , epoch
     , None
@@ -335,11 +330,11 @@ for epoch in range(number_epochs):
 
     inputs = siginputs.cat(bkginputs)
 
-    mus , cov = utils.regress(localnet, globalnet, inputs, truncation)
+    mus , logsigmas = utils.regress(localnet, globalnet, inputs, truncation)
 
     targs = torch.Tensor(targs).detach()
 
-    l = utils.loss(targs, mus, cov)
+    l = utils.loss(targs, mus, logsigmas)
 
     loss = l.mean()
 
@@ -351,6 +346,4 @@ for epoch in range(number_epochs):
     optim.step()
 
     sumloss += loss.detach().item()
-    sumdist += torch.sqrt((mus[:,0] - targs[:,0])**2).mean().detach().item()
-
-  del loss, mus, cov, inputs, targs
+    sumdist += torch.sqrt((mus - targs)**2).mean().detach().item()
