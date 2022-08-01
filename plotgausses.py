@@ -31,17 +31,15 @@ grad_clip = config["grad_clip"]
 
 lr = config["lr"]
 
-targlen = 1
-
 globalnodes = config["globalnodes"]
 localnodes = config["localnodes"]
 
 localnodes = [ 1 ] + localnodes
 
 globalnodes = \
-    [ localnodes[-1] + 1 ] \
+    [ localnodes[-1] ] \
   + globalnodes \
-  + [ targlen + (targlen * (targlen+1) // 2) ]
+  + [ 2 ]
 
 
 sig_mu_range = config["sig_mu_range"]
@@ -54,11 +52,12 @@ n_bkgs = config["n_bkgs"]
 
 runname = argv[2]
 
-act = torch.nn.LeakyReLU(0.01, inplace=True)
+act = torch.nn.LeakyReLU(0.02, inplace=True)
+
 localnet = \
-  [ torch.nn.Conv1d(localnodes[i], localnodes[i+1], 1) for i in range(len(localnodes) - 1) ]
-  
-localnet = torch.nn.Sequential(*(utils.intersperse(act, localnet)))
+    [ torch.nn.Conv1d(localnodes[i], localnodes[i+1], 1) for i in range(len(localnodes) - 1) ]
+
+localnet = torch.nn.Sequential(*(utils.intersperse(act, localnet)), torch.nn.Softmax(dim=1))
 
 globalnet = \
   [ torch.nn.Linear(globalnodes[i], globalnodes[i+1]) for i in range(len(globalnodes) - 1) ]
@@ -165,7 +164,7 @@ testinputs = testsiginputs.cat(testbkginputs)
 testmus = np.concatenate([testsigmus, testbkgmus], axis=1)
 testsigmas = np.concatenate([testsigsigmas, testbkgsigmas], axis=1)
 testnorms = np.concatenate([testtargs, testbkgnorms], axis=1)
-mu , cov = utils.regress(localnet, globalnet, testinputs)
+mus , logsigmas = utils.regress(localnet, globalnet, testinputs, -1)
 
 
 for i in range(ntests):
@@ -182,7 +181,7 @@ for i in range(ntests):
     , xlabel="$x$"
     , ylabel="events / unit"
     , text="$\\lambda^{sig}_{true} = %.1f$; $\\lambda^{sig}_{out} = %.1f \\pm %.1f$"
-        % (testtargs[i], mu[i], np.sqrt(cov[i,0].detach()))
+        % (testtargs[i], mus[i], torch.exp(logsigmas[i].detach()))
     )
 
   fig.savefig(outfolder + "/distributions%d.pdf" % i)
@@ -191,8 +190,8 @@ for i in range(ntests):
     pickle.dump(ins.tolist(), f)
 
   print("toy %02d" % i)
-  print("mu =", mu[i][0].item())
-  print("std =", torch.sqrt(cov[i][0][0]).item())
+  print("mu =", mus[i].item())
+  print("std =", torch.exp(logsigmas[i]).item())
   print()
 
 

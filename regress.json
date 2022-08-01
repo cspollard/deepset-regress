@@ -1,27 +1,27 @@
-{ "globalnodes" : [ 64 , 64 , 64 ]
-, "localnodes" : [ 64 , 64 , 64 ]
+{ "globalnodes" : [ 32 , 32 , 32 , 32 , 32 ]
+, "localnodes" : [ 32 , 32 , 32 , 32 , 32 ]
 
 , "lr" : 1e-4
-, "patience" : 16
+, "patience" : 32
 , "lrfactor" : 0.5
 , "outdir" : "tb"
 , "device" : "cpu"
 
-, "batch_size" : 64
-, "epoch_size" : 100
+, "batch_size" : 32
+, "epoch_size" : 32
 , "number_epochs" : 99999
 , "grad_clip" : 1e-3
 
-, "sig_mu_range" : [ 4.0 , 6.0 ]
+, "sig_mu_range" : [ -10.0 , 10.0 ]
 , "sig_sigma_range" : [ 0.5 , 1.5 ]
 
-, "bkg_mu_range" : [ 10.0 , 15.0 ]
-, "bkg_sigma_range" : [ 4.0 , 10.0 ]
+, "bkg_mu_range" : [ -10.0 , 10.0 ]
+, "bkg_sigma_range" : [ 5.0 , 10.0 ]
 
-, "sig_norm_range" : [ 0.0 , 100.0 ]
-, "bkg_norm_range" : [ 0.0 , 100.0 ]
+, "sig_norm_range" : [ 0.0 , 1000.0 ]
+, "bkg_norm_range" : [ 0.0 , 1000.0 ]
 , "n_bkgs" : 1
 
-, "truncation" : 32
+, "truncation" : 256
 
 }
