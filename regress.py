@@ -231,7 +231,7 @@ for epoch in range(number_epochs):
     sched.step(sumloss / epoch_size)
 
 
-  mus , logsigmas = utils.regress(localnet, globalnet, testinputs, truncation)
+  mus , logsigmas = utils.regress(localnet, globalnet, testinputs, -1)
   mus = mus.detach()
   logsigmas = logsigmas.detach()
 

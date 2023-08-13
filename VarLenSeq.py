@@ -1,11 +1,13 @@
 import torch
+import einops
 
 class VarLenSeq:
-  # carries a tensor of shape (batch_size, x , l) and a mask of shape
-  # (batch_size)
+  # carries a tensor of shape (batch_size , feat_length , seq_length)
+  # and a length vector of shape (batch_size,)
   def __init__(self, ten, lengths):
     self.tensor = ten
     self.lengths = lengths
+    return
 
 
   def cat(self, vls):
@@ -24,20 +26,20 @@ class VarLenSeq:
 
 
   def sum(self, truncated=-1):
-    s = torch.zeros(self.tensor.size()[:-1])
+    nbatch , nfeat , seqlen = self.tensor.shape
 
-    for batch in range(self.lengths.size()[0]):
-      l = self.lengths[batch]
+    # choose a random ordering of indices to effectively shuffle the tensor
+    idxs = torch.randperm(seqlen)
+    idxs = einops.repeat(idxs, "i -> b i", b=nbatch)
 
-      if 0 < truncated and truncated < l:
-        shuffled = self.tensor[batch].T[torch.randperm(l)].T
+    lens = einops.repeat(self.lengths, "b -> b i", i=seqlen)
+    mask = idxs < lens
 
-        truncked = torch.sum(shuffled[ : , :truncated ], axis=1)
-        untruncked = torch.sum(shuffled[ : , truncated: ], axis=1).detach()
+    # if we're truncating, then we need to throw away even more.
+    # and also reweight to account for the truncation.
+    if 0 < truncated:
+      mask = mask * (idxs < truncated) * lens / truncated
 
-        s[batch] = truncked + untruncked
+    mask = einops.repeat(mask, "b i -> b f i", f=nfeat)
 
-      else:
-        s[batch] = torch.sum(self.tensor[ batch , : , :l ], axis=1)
-
-    return s
+    return einops.reduce(self.tensor * mask, "b f s -> b f", "sum")
